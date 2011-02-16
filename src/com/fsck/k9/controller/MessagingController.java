@@ -1008,7 +1008,7 @@ public class MessagingController implements Runnable {
             if (account.syncRemoteDeletions()) {
                 ArrayList<Message> destroyMessages = new ArrayList<Message>();
                 for (Message localMessage : localMessages) {
-                    if (remoteUidMap.get(localMessage.getUid()) == null) {
+                    if (!localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX) && remoteUidMap.get(localMessage.getUid()) == null) {
                         destroyMessages.add(localMessage);
                     }
                 }
@@ -3120,7 +3120,7 @@ public class MessagingController implements Runnable {
 
 
     public boolean isMoveCapable(Message message) {
-        return !message.getUid().startsWith(K9.LOCAL_UID_PREFIX);
+        return true;
     }
     public boolean isCopyCapable(Message message) {
         return isMoveCapable(message);
@@ -3196,10 +3196,7 @@ public class MessagingController implements Runnable {
 
             List<String> uids = new LinkedList<String>();
             for (Message message : inMessages) {
-                String uid = message.getUid();
-                if (!uid.startsWith(K9.LOCAL_UID_PREFIX)) {
-                    uids.add(uid);
-                }
+                uids.add(message.getUid());
             }
 
             Message[] messages = localSrcFolder.getMessages(uids.toArray(EMPTY_STRING_ARRAY), null);
@@ -3223,6 +3220,10 @@ public class MessagingController implements Runnable {
                 } else {
                     localSrcFolder.moveMessages(messages, localDestFolder);
                     for (String origUid : origUidMap.keySet()) {
+                        if (origUid.startsWith(K9.LOCAL_UID_PREFIX)) {
+                            continue;
+                        }
+
                         for (MessagingListener l : getListeners()) {
                             l.messageUidChanged(account, srcFolder, origUid, origUidMap.get(origUid).getUid());
                         }
