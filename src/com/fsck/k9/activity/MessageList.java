@@ -2198,17 +2198,23 @@ public class MessageList
                 holder.selected.setVisibility(message.selected ? View.VISIBLE : View.GONE);
             }
 
-
-
             holder.chip.setBackgroundDrawable(message.message.getFolder().getAccount().generateColorChip().drawable());
             holder.chip.getBackground().setAlpha(message.read ? 127 : 255);
             view.getBackground().setAlpha(message.downloaded ? 0 : 127);
 
-            if ((message.message.getSubject() == null) || message.message.getSubject().equals("")) {
-                holder.subject.setText(getText(R.string.general_no_subject));
-            } else {
-                holder.subject.setText(message.message.getSubject());
+            StringBuilder subject = new StringBuilder();
+            if (K9.DEBUG) {
+                if (message.message.getUid().startsWith(K9.LOCAL_UID_PREFIX)) {
+                    subject.append("(local message)");
+                }
             }
+
+            if ((message.message.getSubject() == null) || message.message.getSubject().equals("")) {
+                subject.append(getText(R.string.general_no_subject));
+            } else {
+                subject.append(message.message.getSubject());
+            }
+            holder.subject.setText(subject);
 
             int senderTypeface = message.read ? Typeface.NORMAL : Typeface.BOLD;
             if (holder.preview != null) {
