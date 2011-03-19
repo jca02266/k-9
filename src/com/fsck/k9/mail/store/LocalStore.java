@@ -2126,7 +2126,7 @@ public class LocalStore extends Store implements Serializable {
                                 }
 
                                 String text = sbText.toString();
-                                String html = markupContent(text, sbHtml.toString());
+                                String html = markupContent(text, sbHtml.toString(), message.getFrom());
                                 String preview = calculateContentPreview(text);
                                 // If we couldn't generate a reasonable preview from the text part, try doing it with the HTML part.
                                 if (preview == null || preview.length() == 0) {
@@ -2240,7 +2240,7 @@ public class LocalStore extends Store implements Serializable {
                             }
 
                             String text = sbText.toString();
-                            String html = markupContent(text, sbHtml.toString());
+                            String html = markupContent(text, sbHtml.toString(), message.getFrom());
                             String preview = calculateContentPreview(text);
                             // If we couldn't generate a reasonable preview from the text part, try doing it with the HTML part.
                             if (preview == null || preview.length() == 0) {
@@ -2778,12 +2778,12 @@ public class LocalStore extends Store implements Serializable {
 
         }
 
-        public String markupContent(String text, String html) {
+        public String markupContent(String text, String html, Address[] fromAddrs) {
             if (text.length() > 0 && html.length() == 0) {
                 html = HtmlConverter.textToHtml(text);
             }
 
-            html = HtmlConverter.convertEmoji2Img(html);
+            html = HtmlConverter.convertEmoji2Img(html, fromAddrs);
 
             return html;
         }
