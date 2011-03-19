@@ -2164,7 +2164,7 @@ public class LocalStore extends Store implements Serializable {
 
                                     attachments = container.attachments;
                                     text = container.text;
-                                    html = HtmlConverter.convertEmoji2Img(container.html);
+                                    html = HtmlConverter.convertEmoji2Img(container.html, message.getFrom());
                                 }
 
                                 String preview = calculateContentPreview(text);
@@ -2253,7 +2253,7 @@ public class LocalStore extends Store implements Serializable {
 
                             List<Part> attachments = container.attachments;
                             String text = container.text;
-                            String html = HtmlConverter.convertEmoji2Img(container.html);
+                            String html = HtmlConverter.convertEmoji2Img(container.html, message.getFrom());
 
                             String preview = calculateContentPreview(text);
 
