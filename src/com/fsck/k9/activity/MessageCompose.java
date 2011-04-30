@@ -170,6 +170,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private MultiAutoCompleteTextView mBccView;
     private EditText mSubjectView;
     private EditText mSignatureView;
+    private View mSignatureBar;
     private EditText mMessageContentView;
     private LinearLayout mAttachments;
     private View mQuotedTextBar;
@@ -187,6 +188,8 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private ImageButton mAddToFromContacts;
     private ImageButton mAddCcFromContacts;
     private ImageButton mAddBccFromContacts;
+    private ImageButton mAddSignature;
+    private ImageButton mDelSignature;
 
     private PgpData mPgpData = null;
 
@@ -385,8 +388,16 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         mCcWrapper = (LinearLayout) findViewById(R.id.cc_wrapper);
         mBccWrapper = (LinearLayout) findViewById(R.id.bcc_wrapper);
 
+        View upperSignatureBar = findViewById(R.id.upper_signature_bar);
+        View lowerSignatureBar = findViewById(R.id.lower_signature_bar);
+
         EditText upperSignature = (EditText)findViewById(R.id.upper_signature);
         EditText lowerSignature = (EditText)findViewById(R.id.lower_signature);
+
+        ImageButton upperAddSignature = (ImageButton)findViewById(R.id.upper_signature_append);
+        ImageButton upperDelSignature = (ImageButton)findViewById(R.id.upper_signature_delete);
+        ImageButton lowerAddSignature = (ImageButton)findViewById(R.id.lower_signature_append);
+        ImageButton lowerDelSignature = (ImageButton)findViewById(R.id.lower_signature_delete);
 
         mMessageContentView = (EditText)findViewById(R.id.message_content);
         mMessageContentView.getInputExtras(true).putBoolean("allowEmoji", true);
@@ -463,6 +474,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
             mAddCcFromContacts.setVisibility(View.GONE);
             mAddBccFromContacts.setVisibility(View.GONE);
         }
+
         /*
          * We set this to invisible by default. Other methods will turn it back on if it's
          * needed.
@@ -509,15 +521,47 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
         if (mAccount.isSignatureBeforeQuotedText()) {
             mSignatureView = upperSignature;
+            mSignatureBar = upperSignatureBar;
+            mAddSignature = upperAddSignature;
+            mDelSignature = upperDelSignature;
             lowerSignature.setVisibility(View.GONE);
+            lowerAddSignature.setVisibility(View.GONE);
+            lowerDelSignature.setVisibility(View.GONE);
         } else {
             mSignatureView = lowerSignature;
+            mSignatureBar = lowerSignatureBar;
+            mAddSignature = lowerAddSignature;
+            mDelSignature = lowerDelSignature;
             upperSignature.setVisibility(View.GONE);
+            upperAddSignature.setVisibility(View.GONE);
+            upperDelSignature.setVisibility(View.GONE);
         }
         mSignatureView.addTextChangedListener(sigwatcher);
 
-        if (!mIdentity.getSignatureUse()) {
-            mSignatureView.setVisibility(View.GONE);
+        mAddSignature.setOnClickListener(new OnClickListener() {
+            @Override public void onClick(View v) {
+                mSignatureBar.setVisibility(View.VISIBLE);
+                mDelSignature.setVisibility(View.VISIBLE);
+                mAddSignature.setVisibility(View.GONE);
+            }
+        });
+        mDelSignature.setOnClickListener(new OnClickListener() {
+            @Override public void onClick(View v) {
+                mSignatureBar.setVisibility(View.GONE);
+                mDelSignature.setVisibility(View.GONE);
+                mAddSignature.setVisibility(View.VISIBLE);
+            }
+        });
+
+        if (mIdentity.getSignatureUse()) {
+            mSignatureBar.setVisibility(View.VISIBLE);
+            mDelSignature.setVisibility(View.VISIBLE);
+            mAddSignature.setVisibility(View.GONE);
+        }
+        else {
+            mSignatureBar.setVisibility(View.GONE);
+            mDelSignature.setVisibility(View.GONE);
+            mAddSignature.setVisibility(View.VISIBLE);
         }
 
         mMessageFormat = mAccount.getMessageFormat();
@@ -1283,7 +1327,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
 
     private String appendSignature(String text) {
-        if (mIdentity.getSignatureUse()) {
+        if (mSignatureBar.getVisibility() == View.VISIBLE) {
             String signature = mSignatureView.getText().toString();
 
             if (signature != null && !signature.contentEquals("")) {
@@ -1633,11 +1677,15 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     }
 
     private void updateSignature() {
-        if (mIdentity.getSignatureUse()) {
-            mSignatureView.setText(mIdentity.getSignature());
-            mSignatureView.setVisibility(View.VISIBLE);
+        mSignatureView.setText(mIdentity.getSignature());
+        if (mSignatureBar.getVisibility() == View.VISIBLE) {
+            mSignatureBar.setVisibility(View.VISIBLE);
+            mDelSignature.setVisibility(View.VISIBLE);
+            mAddSignature.setVisibility(View.GONE);
         } else {
-            mSignatureView.setVisibility(View.GONE);
+            mSignatureBar.setVisibility(View.GONE);
+            mDelSignature.setVisibility(View.GONE);
+            mAddSignature.setVisibility(View.VISIBLE);
         }
     }
 
