@@ -1636,7 +1636,7 @@ public class MessageList
         }
         case R.id.same_sender: {
             MessageList.actionHandle(MessageList.this,
-                                     "From " + holder.sender, holder.senderAddress, true,
+                                     "From " + holder.sender, holder.senderAddress, false,
                                      null, null);
             break;
         }
