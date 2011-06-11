@@ -1,5 +1,7 @@
 package com.fsck.k9.helper;
 
+import java.util.ArrayList;
+
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -207,10 +209,10 @@ public class ContactsSdk3_4 extends com.fsck.k9.helper.Contacts {
     }
 
     @Override
-    public String getEmailFromContactPicker(final Intent data) {
+    public ArrayList<String> getEmailFromContactPicker(final Intent data) {
         Cursor cursor = null;
         Cursor cursor2 = null;
-        String email = "";
+        ArrayList<String> email = new ArrayList<String>();
 
         try {
             Uri result = data.getData();
@@ -224,8 +226,8 @@ public class ContactsSdk3_4 extends com.fsck.k9.helper.Contacts {
                               new String[] { emailId },
                               null);
 
-                if (cursor2.moveToFirst()) {
-                    email = cursor2.getString(0);
+                while (cursor2.moveToNext()) {
+                    email.add(cursor2.getString(0));
                 }
             }
         } catch (Exception e) {
