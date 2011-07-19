@@ -800,7 +800,7 @@ public class MessageList
         mListView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_INSET);
         mListView.setLongClickable(true);
         mListView.setFastScrollEnabled(true);
-        mListView.setScrollingCacheEnabled(false);
+        mListView.setScrollingCacheEnabled(true);
         mListView.setOnItemClickListener(this);
         mListView.addFooterView(getFooterView(mListView));
 
