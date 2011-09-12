@@ -4078,15 +4078,16 @@ public class MessagingController implements Runnable {
             localMessage = localFolder.getMessage(message.getUid());
             localMessage.setFlag(Flag.X_DOWNLOADED_FULL, true);
 
-            PendingCommand command = new PendingCommand();
-            command.command = PENDING_COMMAND_APPEND;
-            command.arguments = new String[] {
-                localFolder.getName(),
-                localMessage.getUid()
-            };
-            queuePendingCommand(account, command);
-            processPendingCommands(account);
-
+            if (account.getSyncDraftMessage()) {
+                PendingCommand command = new PendingCommand();
+                command.command = PENDING_COMMAND_APPEND;
+                command.arguments = new String[] {
+                    localFolder.getName(),
+                    localMessage.getUid()
+                };
+                queuePendingCommand(account, command);
+                processPendingCommands(account);
+            }
         } catch (MessagingException e) {
             Log.e(K9.LOG_TAG, "Unable to save message as draft.", e);
             addErrorMessage(account, null, e);
