@@ -1008,7 +1008,7 @@ public class MessagingController implements Runnable {
             if (account.syncRemoteDeletions()) {
                 ArrayList<Message> destroyMessages = new ArrayList<Message>();
                 for (Message localMessage : localMessages) {
-                    if (remoteUidMap.get(localMessage.getUid()) == null) {
+                    if (!localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX) && remoteUidMap.get(localMessage.getUid()) == null) {
                         destroyMessages.add(localMessage);
                     }
                 }
