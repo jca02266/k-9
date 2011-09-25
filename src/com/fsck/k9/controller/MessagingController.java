@@ -1005,25 +1005,25 @@ public class MessagingController implements Runnable {
             /*
              * Remove any messages that are in the local store but no longer on the remote store or are too old
              */
+            ArrayList<Message> destroyMessages = new ArrayList<Message>();
+            for (Message localMessage : localMessages) {
+                if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX)) {
+//                if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX) && localMessage.isSet(Flag.X_DOWNLOADED_FULL)) {
+                      PendingCommand command = new PendingCommand();
+                      command.command = PENDING_COMMAND_APPEND;
+                      command.arguments = new String[] {
+                          localFolder.getName(),
+                          localMessage.getUid()
+                      };
+                      queuePendingCommand(account, command);
+                      processPendingCommands(account);
+                  }
+                  else if (remoteUidMap.get(localMessage.getUid()) == null) {
+                      destroyMessages.add(localMessage);
+                  }
+            }
+
             if (account.syncRemoteDeletions()) {
-                ArrayList<Message> destroyMessages = new ArrayList<Message>();
-                for (Message localMessage : localMessages) {
-                    if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX)) {
-                        PendingCommand command = new PendingCommand();
-                        command.command = PENDING_COMMAND_APPEND;
-                        command.arguments = new String[] {
-                            localFolder.getName(),
-                            localMessage.getUid()
-                        };
-                        queuePendingCommand(account, command);
-                        processPendingCommands(account);
-                    }
-                    else if (remoteUidMap.get(localMessage.getUid()) == null) {
-                        destroyMessages.add(localMessage);
-                    }
-                }
-
-
                 localFolder.destroyMessages(destroyMessages.toArray(EMPTY_MESSAGE_ARRAY));
 
                 for (Message destroyMessage : destroyMessages) {
