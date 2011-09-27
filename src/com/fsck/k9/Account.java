@@ -65,6 +65,7 @@ public class Account implements BaseAccount {
     private static final String DEFAULT_QUOTE_PREFIX = ">";
     private static final boolean DEFAULT_QUOTED_TEXT_SHOWN = true;
     private static final boolean DEFAULT_REPLY_AFTER_QUOTE = false;
+    private static final boolean DEFAULT_SYNC_DRAFT_MESSAGE = true;
 
     /**
      * <pre>
@@ -134,6 +135,7 @@ public class Account implements BaseAccount {
     private boolean mDefaultQuotedTextShown;
     private boolean mReplyAfterQuote;
     private boolean mSyncRemoteDeletions;
+    private boolean mSyncDraftMessage;
     private String mCryptoApp;
     private boolean mCryptoAutoSignature;
 
@@ -213,6 +215,7 @@ public class Account implements BaseAccount {
         mDefaultQuotedTextShown = DEFAULT_QUOTED_TEXT_SHOWN;
         mReplyAfterQuote = DEFAULT_REPLY_AFTER_QUOTE;
         mSyncRemoteDeletions = true;
+        mSyncDraftMessage = true;
         mCryptoApp = Apg.NAME;
         mCryptoAutoSignature = false;
 
@@ -274,6 +277,7 @@ public class Account implements BaseAccount {
         mSpamFolderName = prefs.getString(mUuid  + ".spamFolderName", "Spam");
         mExpungePolicy = prefs.getString(mUuid  + ".expungePolicy", EXPUNGE_IMMEDIATELY);
         mSyncRemoteDeletions = prefs.getBoolean(mUuid  + ".syncRemoteDeletions", true);
+        mSyncDraftMessage = prefs.getBoolean(mUuid  + ".syncDraftMessage", true);
 
         mMaxPushFolders = prefs.getInt(mUuid + ".maxPushFolders", 10);
         goToUnreadMessageSearch = prefs.getBoolean(mUuid + ".goToUnreadMessageSearch", false);
@@ -442,6 +446,8 @@ public class Account implements BaseAccount {
         editor.remove(mUuid + ".signatureBeforeQuotedText");
         editor.remove(mUuid + ".expungePolicy");
         editor.remove(mUuid + ".syncRemoteDeletions");
+        editor.remove(mUuid + ".syncDraftMessage");
+
         editor.remove(mUuid + ".maxPushFolders");
         editor.remove(mUuid + ".searchableFolders");
         editor.remove(mUuid + ".chipColor");
@@ -594,6 +600,7 @@ public class Account implements BaseAccount {
         editor.putBoolean(mUuid + ".signatureBeforeQuotedText", this.mIsSignatureBeforeQuotedText);
         editor.putString(mUuid + ".expungePolicy", mExpungePolicy);
         editor.putBoolean(mUuid + ".syncRemoteDeletions", mSyncRemoteDeletions);
+        editor.putBoolean(mUuid + ".syncDraftMessage", mSyncDraftMessage);
         editor.putInt(mUuid + ".maxPushFolders", mMaxPushFolders);
         editor.putString(mUuid + ".searchableFolders", searchableFolders.name());
         editor.putInt(mUuid + ".chipColor", mChipColor);
@@ -1439,6 +1446,14 @@ public class Account implements BaseAccount {
 
     public synchronized void setSyncRemoteDeletions(boolean syncRemoteDeletions) {
         mSyncRemoteDeletions = syncRemoteDeletions;
+    }
+
+    public synchronized boolean getSyncDraftMessage() {
+        return mSyncDraftMessage;
+    }
+
+    public synchronized void setSyncDraftMessage(boolean syncDraftMessage) {
+        mSyncDraftMessage = syncDraftMessage;
     }
 
     public synchronized String getLastSelectedFolderName() {
