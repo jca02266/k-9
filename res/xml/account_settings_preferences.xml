@@ -271,7 +271,7 @@
             android:persistent="false"
             android:key="sync_draft_message"
             android:title="@string/account_settings_sync_draft_message_label"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:summary="@string/account_settings_sync_draft_message_summary" />
 
         <PreferenceScreen

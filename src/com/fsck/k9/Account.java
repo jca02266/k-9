@@ -215,7 +215,7 @@ public class Account implements BaseAccount {
         mDefaultQuotedTextShown = DEFAULT_QUOTED_TEXT_SHOWN;
         mReplyAfterQuote = DEFAULT_REPLY_AFTER_QUOTE;
         mSyncRemoteDeletions = true;
-        mSyncDraftMessage = true;
+        mSyncDraftMessage = false;
         mCryptoApp = Apg.NAME;
         mCryptoAutoSignature = false;
 
@@ -277,7 +277,7 @@ public class Account implements BaseAccount {
         mSpamFolderName = prefs.getString(mUuid  + ".spamFolderName", "Spam");
         mExpungePolicy = prefs.getString(mUuid  + ".expungePolicy", EXPUNGE_IMMEDIATELY);
         mSyncRemoteDeletions = prefs.getBoolean(mUuid  + ".syncRemoteDeletions", true);
-        mSyncDraftMessage = prefs.getBoolean(mUuid  + ".syncDraftMessage", true);
+        mSyncDraftMessage = prefs.getBoolean(mUuid  + ".syncDraftMessage", false);
 
         mMaxPushFolders = prefs.getInt(mUuid + ".maxPushFolders", 10);
         goToUnreadMessageSearch = prefs.getBoolean(mUuid + ".goToUnreadMessageSearch", false);
