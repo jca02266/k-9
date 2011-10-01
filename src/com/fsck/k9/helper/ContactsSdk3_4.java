@@ -209,15 +209,17 @@ public class ContactsSdk3_4 extends com.fsck.k9.helper.Contacts {
     }
 
     @Override
-    public ArrayList<String> getEmailFromContactPicker(final Intent data) {
+    public ContactItem getEmailFromContactPicker(final Intent data) {
         Cursor cursor = null;
         Cursor cursor2 = null;
+        ContactItem item = new ContactItem();
         ArrayList<String> email = new ArrayList<String>();
 
         try {
             Uri result = data.getData();
             cursor = mContentResolver.query(result, null, null, null, null);
             if (cursor.moveToFirst()) {
+                String displayName = cursor.getString(cursor.getColumnIndex(Contacts.People.NAME));
                 String emailId = cursor.getString(cursor.getColumnIndex(Contacts.People.PRIMARY_EMAIL_ID));
                 cursor2 = mContext.getContentResolver().query(
                               ContactMethods.CONTENT_EMAIL_URI,
@@ -229,6 +231,13 @@ public class ContactsSdk3_4 extends com.fsck.k9.helper.Contacts {
                 while (cursor2.moveToNext()) {
                     email.add(cursor2.getString(0));
                 }
+                if (email.size() == 0) {
+                    return null;
+                }
+
+                item.setDisplayName(displayName);
+                item.setEmailAddresses(email);
+                return item;
             }
         } catch (Exception e) {
             Log.e(K9.LOG_TAG, "Failed to get email data", e);
@@ -241,7 +250,7 @@ public class ContactsSdk3_4 extends com.fsck.k9.helper.Contacts {
             }
         }
 
-        return email;
+        return null;
     }
 
     /**
