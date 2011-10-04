@@ -21,6 +21,8 @@ import com.fsck.k9.controller.MessagingController;
 import com.fsck.k9.helper.AutoSyncHelper;
 import com.fsck.k9.mail.Pusher;
 
+/**
+ */
 public class MailService extends CoreService {
     private static final String ACTION_CHECK_MAIL = "com.fsck.k9.intent.action.MAIL_SERVICE_WAKEUP";
     private static final String ACTION_RESET = "com.fsck.k9.intent.action.MAIL_SERVICE_RESET";
@@ -40,7 +42,10 @@ public class MailService extends CoreService {
         Intent i = new Intent();
         i.setClass(context, MailService.class);
         i.setAction(MailService.ACTION_RESET);
-        addWakeLockId(context, i, wakeLockId, true);
+        addWakeLockId(i, wakeLockId);
+        if (wakeLockId == null) {
+            addWakeLock(context, i);
+        }
         context.startService(i);
     }
 
@@ -48,7 +53,10 @@ public class MailService extends CoreService {
         Intent i = new Intent();
         i.setClass(context, MailService.class);
         i.setAction(MailService.ACTION_RESTART_PUSHERS);
-        addWakeLockId(context, i, wakeLockId, true);
+        addWakeLockId(i, wakeLockId);
+        if (wakeLockId == null) {
+            addWakeLock(context, i);
+        }
         context.startService(i);
     }
 
@@ -56,7 +64,10 @@ public class MailService extends CoreService {
         Intent i = new Intent();
         i.setClass(context, MailService.class);
         i.setAction(MailService.ACTION_RESCHEDULE_POLL);
-        addWakeLockId(context, i, wakeLockId, true);
+        addWakeLockId(i, wakeLockId);
+        if (wakeLockId == null) {
+            addWakeLock(context, i);
+        }
         context.startService(i);
     }
 
@@ -64,7 +75,7 @@ public class MailService extends CoreService {
         Intent i = new Intent();
         i.setClass(context, MailService.class);
         i.setAction(MailService.ACTION_CANCEL);
-        addWakeLockId(context, i, wakeLockId, false); // CK:Q: why should we not create a wake lock if one is not already existing like for example in actionReschedulePoll?
+        addWakeLockId(i, wakeLockId);
         context.startService(i);
     }
 
@@ -72,7 +83,7 @@ public class MailService extends CoreService {
         Intent i = new Intent();
         i.setClass(context, MailService.class);
         i.setAction(MailService.CONNECTIVITY_CHANGE);
-        addWakeLockId(context, i, wakeLockId, false); // CK:Q: why should we not create a wake lock if one is not already existing like for example in actionReschedulePoll?
+        addWakeLockId(i, wakeLockId);
         context.startService(i);
     }
 
@@ -85,6 +96,7 @@ public class MailService extends CoreService {
 
     @Override
     public void startService(Intent intent, int startId) {
+        Integer startIdObj = startId;
         long startTime = System.currentTimeMillis();
         try {
             boolean oldIsSyncDisabled = isSyncDisabled();
@@ -135,33 +147,45 @@ public class MailService extends CoreService {
             if (ACTION_CHECK_MAIL.equals(intent.getAction())) {
                 if (K9.DEBUG)
                     Log.i(K9.LOG_TAG, "***** MailService *****: checking mail");
+
                 if (hasConnectivity && doBackground) {
                     PollService.startService(this);
                 }
-                reschedulePoll(hasConnectivity, doBackground, startId, false);
+                reschedulePoll(hasConnectivity, doBackground, startIdObj, false);
+                startIdObj = null;
             } else if (ACTION_CANCEL.equals(intent.getAction())) {
                 if (K9.DEBUG)
                     Log.v(K9.LOG_TAG, "***** MailService *****: cancel");
+
                 cancel();
             } else if (ACTION_RESET.equals(intent.getAction())) {
                 if (K9.DEBUG)
                     Log.v(K9.LOG_TAG, "***** MailService *****: reschedule");
-                rescheduleAll(hasConnectivity, doBackground, startId); 
+
+                rescheduleAll(hasConnectivity, doBackground, startIdObj);
+                startIdObj = null;
+
             } else if (ACTION_RESTART_PUSHERS.equals(intent.getAction())) {
                 if (K9.DEBUG)
                     Log.v(K9.LOG_TAG, "***** MailService *****: restarting pushers");
-                reschedulePushers(hasConnectivity, doBackground, startId);
+                reschedulePushers(hasConnectivity, doBackground, startIdObj);
+                startIdObj = null;
+
             } else if (ACTION_RESCHEDULE_POLL.equals(intent.getAction())) {
                 if (K9.DEBUG)
                     Log.v(K9.LOG_TAG, "***** MailService *****: rescheduling poll");
-                reschedulePoll(hasConnectivity, doBackground, startId, true);
+                reschedulePoll(hasConnectivity, doBackground, startIdObj, true);
+                startIdObj = null;
+
             } else if (ACTION_REFRESH_PUSHERS.equals(intent.getAction())) {
                 if (hasConnectivity && doBackground) {
                     refreshPushers(null);
-                    schedulePushers(startId);
+                    schedulePushers(startIdObj);
+                    startIdObj = null;
                 }
             } else if (CONNECTIVITY_CHANGE.equals(intent.getAction())) {
-                rescheduleAll(hasConnectivity, doBackground, startId);
+                rescheduleAll(hasConnectivity, doBackground, startIdObj);
+                startIdObj = null;
                 if (K9.DEBUG)
                     Log.i(K9.LOG_TAG, "Got connectivity action with hasConnectivity = " + hasConnectivity + ", doBackground = " + doBackground);
             } else if (CANCEL_CONNECTIVITY_NOTICE.equals(intent.getAction())) {
@@ -170,7 +194,9 @@ public class MailService extends CoreService {
                 MessagingController.getInstance(getApplication()).systemStatusChanged();
             }
         } finally {
-          /* nothing to do */
+            if (startIdObj != null) {
+                stopSelf(startId);
+            }
         }
         if (K9.DEBUG)
             Log.i(K9.LOG_TAG, "MailService.onStart took " + (System.currentTimeMillis() - startTime) + "ms");
@@ -179,6 +205,7 @@ public class MailService extends CoreService {
     private void rescheduleAll(final boolean hasConnectivity, final boolean doBackground, final Integer startId) {
         reschedulePoll(hasConnectivity, doBackground, null, true);
         reschedulePushers(hasConnectivity, doBackground, startId);
+
     }
 
 
@@ -201,6 +228,7 @@ public class MailService extends CoreService {
     private final static String LAST_CHECK_END = "MailService.lastCheckEnd";
 
     public static void saveLastCheckEnd(Context context) {
+
         long lastCheckEnd = System.currentTimeMillis();
         if (K9.DEBUG)
             Log.i(K9.LOG_TAG, "Saving lastCheckEnd = " + new Date(lastCheckEnd));
@@ -299,6 +327,7 @@ public class MailService extends CoreService {
     private void reschedulePushers(final boolean hasConnectivity, final boolean doBackground, final Integer startId) {
         execute(getApplication(), new Runnable() {
             public void run() {
+
                 if (K9.DEBUG)
                     Log.i(K9.LOG_TAG, "Rescheduling pushers");
                 stopPushers(null);
@@ -308,6 +337,7 @@ public class MailService extends CoreService {
                 } else {
                     if (K9.DEBUG) {
                         Log.i(K9.LOG_TAG, "Not scheduling pushers:  connectivity? " + hasConnectivity + " -- doBackground? " + doBackground);
+
                     }
                 }
 
@@ -410,11 +440,13 @@ public class MailService extends CoreService {
 
 
     @Override
-    public IBinder onBind(@SuppressWarnings("unused") Intent intent) {
+    public IBinder onBind(Intent intent) {
         return null;
     }
 
     public static long getNextPollTime() {
         return nextCheck;
     }
+
+
 }

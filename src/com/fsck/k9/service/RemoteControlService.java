@@ -27,7 +27,10 @@ public class RemoteControlService extends CoreService {
         //  Intent i = new Intent();
         i.setClass(context, RemoteControlService.class);
         i.setAction(RemoteControlService.SET_ACTION);
-        addWakeLockId(context, i, wakeLockId, true);
+        addWakeLockId(i, wakeLockId);
+        if (wakeLockId == null) {
+            addWakeLock(context, i);
+        }
         context.startService(i);
     }
 

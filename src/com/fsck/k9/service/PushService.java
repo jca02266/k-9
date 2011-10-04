@@ -40,13 +40,6 @@ public class PushService extends CoreService {
     }
 
     @Override
-    public void onCreate() {
-        super.onCreate();
-        setAutoShutdown(false);
-    }
-
-
-    @Override
     public IBinder onBind(Intent arg0) {
         // TODO Auto-generated method stub
         return null;
