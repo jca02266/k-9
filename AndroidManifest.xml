@@ -201,7 +201,7 @@
         </activity>
         <activity
             android:name="com.fsck.k9.activity.MessageList"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTop"
             android:configChanges="locale"
             >
         </activity>

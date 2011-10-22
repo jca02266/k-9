@@ -825,7 +825,7 @@ public class Pop3Store extends Store {
         }
 
         private String readLine() throws IOException {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             int d = mIn.read();
             if (d == -1) {
                 throw new IOException("End of stream reached while trying to read line.");
@@ -981,7 +981,7 @@ public class Pop3Store extends Store {
             //   }
 //         catch (MessagingException me)
 //         {
-//          Log.w(K9.LOG_TAG, "Could not delete non-existant message", me);
+//          Log.w(K9.LOG_TAG, "Could not delete non-existent message", me);
 //         }
         }
     }

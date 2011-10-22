@@ -384,7 +384,7 @@ public class Account implements BaseAccount {
     }
     
     private String combineUuids(String[] uuids) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0, length = uuids.length; i < length; i++) {
             if (sb.length() > 0) {
                 sb.append(',');
@@ -1060,7 +1060,7 @@ public class Account implements BaseAccount {
     }
 
     // It'd be great if this actually went into the store implementation
-    // to get this, but that's expensive and not easilly accessible
+    // to get this, but that's expensive and not easily accessible
     // during initialization
     public boolean isSearchByDateCapable() {
         if (getStoreUri().startsWith("imap")) {

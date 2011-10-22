@@ -205,7 +205,7 @@ public class ImapResponseParser {
                        ch == '[' || ch == ']' ||
                        // docs claim that flags are \ atom but atom isn't supposed to
                        // contain
-                       // * and some falgs contain *
+                       // * and some flags contain *
                        // ch == '%' || ch == '*' ||
 //                    ch == '%' ||
                        // TODO probably should not allow \ and should recognize
@@ -281,7 +281,7 @@ public class ImapResponseParser {
     private String parseQuoted() throws IOException {
         expect('"');
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         int ch;
         boolean escape = false;
         while ((ch = mIn.read()) != -1) {
@@ -299,7 +299,7 @@ public class ImapResponseParser {
     }
 
     private String readStringUntil(char end) throws IOException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         int ch;
         while ((ch = mIn.read()) != -1) {
             if (ch == end) {
@@ -324,7 +324,7 @@ public class ImapResponseParser {
      * Represents an IMAP list response and is also the base class for the
      * ImapResponse.
      */
-    public class ImapList extends ArrayList<Object> {
+    public static class ImapList extends ArrayList<Object> {
         private static final long serialVersionUID = -4067248341419617583L;
 
         public ImapList getList(int index) {
@@ -471,7 +471,7 @@ public class ImapResponseParser {
 
         public String getAlertText() {
             if (size() > 1 && equalsIgnoreCase("[ALERT]", get(1))) {
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
                 for (int i = 2, count = size(); i < count; i++) {
                     sb.append(get(i).toString());
                     sb.append(' ');
