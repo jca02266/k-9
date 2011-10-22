@@ -59,7 +59,7 @@ public class Account implements BaseAccount {
     public static final String TYPE_OTHER = "OTHER";
     private static final String[] networkTypes = { TYPE_WIFI, TYPE_MOBILE, TYPE_OTHER };
 
-    private static final MessageFormat DEFAULT_MESSAGE_FORMAT = MessageFormat.HTML;
+    private static final MessageFormat DEFAULT_MESSAGE_FORMAT = MessageFormat.TEXT;
     private static final boolean DEFAULT_MESSAGE_READ_RECEIPT = false;
     private static final QuoteStyle DEFAULT_QUOTE_STYLE = QuoteStyle.PREFIX;
     private static final String DEFAULT_QUOTE_PREFIX = ">";
