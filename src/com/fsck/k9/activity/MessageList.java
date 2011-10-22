@@ -595,7 +595,7 @@ public class MessageList
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         if (view == mFooterView) {
-            if (mCurrentFolder != null) {
+            if (mCurrentFolder != null && mAccount != null) {
                 mController.loadMoreMessages(mAccount, mFolderName, mAdapter.mListener);
             }
             return;
