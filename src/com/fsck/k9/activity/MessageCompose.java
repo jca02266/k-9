@@ -1370,7 +1370,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         }
         if (mEncryptCheckbox.isChecked() && !mPgpData.hasEncryptionKeys()) {
             // key selection before encryption
-            String emails = "";
+            StringBuilder emails = new StringBuilder();
             Address[][] addresses = new Address[][] { getAddresses(mToView),
                     getAddresses(mCcView),
                     getAddresses(mBccView)
@@ -1378,18 +1378,18 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
             for (Address[] addressArray : addresses) {
                 for (Address address : addressArray) {
                     if (emails.length() != 0) {
-                        emails += ",";
+                        emails.append(',');
                     }
-                    emails += address.getAddress();
+                    emails.append(address.getAddress());
                 }
             }
             if (emails.length() != 0) {
-                emails += ",";
+                emails.append(',');
             }
-            emails += mIdentity.getEmail();
+            emails.append(mIdentity.getEmail());
 
             mPreventDraftSaving = true;
-            if (!mAccount.getCryptoProvider().selectEncryptionKeys(MessageCompose.this, emails, mPgpData)) {
+            if (!mAccount.getCryptoProvider().selectEncryptionKeys(MessageCompose.this, emails.toString(), mPgpData)) {
                 mPreventDraftSaving = false;
             }
             return;
@@ -2606,13 +2606,13 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
         // Read subject from the "subject" parameter.
         List<String> subject = uri.getQueryParameters("subject");
-        if (subject.size() > 0) {
+        if (!subject.isEmpty()) {
             mSubjectView.setText(subject.get(0));
         }
 
         // Read message body from the "body" parameter.
         List<String> body = uri.getQueryParameters("body");
-        if (body.size() > 0) {
+        if (!body.isEmpty()) {
             mMessageContentView.setText(body.get(0));
         }
     }

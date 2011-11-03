@@ -89,8 +89,8 @@ public class LocalStore extends Store implements Serializable {
         set.add("From");
         set.add("In-Reply-To");
         set.add("References");
-        set.add("Content-ID");
-        set.add("Content-Disposition");
+        set.add(MimeHeader.HEADER_CONTENT_ID);
+        set.add(MimeHeader.HEADER_CONTENT_DISPOSITION);
         set.add("User-Agent");
         HEADERS_TO_SAVE = Collections.unmodifiableSet(set);
     }
@@ -300,14 +300,14 @@ public class LocalStore extends Store implements Serializable {
                                     String name = cursor.getString(1);
                                     update41Metadata(db, prefs, id, name);
                                 } catch (Exception e) {
-                                    Log.e(K9.LOG_TAG, " error trying to ugpgrade a folder class: " + e);
+                                    Log.e(K9.LOG_TAG, " error trying to ugpgrade a folder class", e);
                                 }
                             }
                         }
 
 
                         catch (SQLiteException e) {
-                            Log.e(K9.LOG_TAG, "Exception while upgrading database to v41. folder classes may have vanished " + e);
+                            Log.e(K9.LOG_TAG, "Exception while upgrading database to v41. folder classes may have vanished", e);
 
                         } finally {
                             if (cursor != null) {
@@ -421,7 +421,7 @@ public class LocalStore extends Store implements Serializable {
                 inTopGroup = prefs.getBoolean(uUid + "." + name + ".inTopGroup", inTopGroup);
                 integrate = prefs.getBoolean(uUid + "." + name + ".integrate", integrate);
             } catch (Exception e) {
-                Log.e(K9.LOG_TAG, " Throwing away an error while trying to upgrade folder metadata: " + e);
+                Log.e(K9.LOG_TAG, " Throwing away an error while trying to upgrade folder metadata", e);
             }
 
             if (displayClass == Folder.FolderClass.NONE) {
@@ -893,7 +893,7 @@ public class LocalStore extends Store implements Serializable {
 
             whereClause.append(" )");
         }
-        if (folders != null && folders.size() > 0) {
+        if (folders != null && !folders.isEmpty()) {
             whereClause.append(" AND folder_id in (");
             boolean anyAdded = false;
             for (LocalFolder folder : folders) {
@@ -1004,7 +1004,7 @@ public class LocalStore extends Store implements Serializable {
                         i++;
                     }
                 } catch (Exception e) {
-                    Log.d(K9.LOG_TAG, "Got an exception " + e);
+                    Log.d(K9.LOG_TAG, "Got an exception", e);
                 } finally {
                     if (cursor != null) {
                         cursor.close();
@@ -1790,7 +1790,7 @@ public class LocalStore extends Store implements Serializable {
                 @Override
                 public Void doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
                     Cursor cursor = null;
-                    if (messages.size() == 0) {
+                    if (messages.isEmpty()) {
                         return null;
                     }
                     try {

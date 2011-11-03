@@ -383,18 +383,6 @@ public class Account implements BaseAccount {
         mCryptoAutoSignature = prefs.getBoolean(mUuid + ".cryptoAutoSignature", false);
     }
     
-    private String combineUuids(String[] uuids) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0, length = uuids.length; i < length; i++) {
-            if (sb.length() > 0) {
-                sb.append(',');
-            }
-            sb.append(uuids[i]);
-        }
-        String accountUuids = sb.toString();
-        return accountUuids;
-    }
-    
     protected synchronized void delete(Preferences preferences) {
         String[] uuids = preferences.getPreferences().getString("accountUuids", "").split(",");
         String[] newUuids = new String[uuids.length - 1];
@@ -405,7 +393,7 @@ public class Account implements BaseAccount {
             }
         }
         
-        String accountUuids = combineUuids(newUuids);
+        String accountUuids = Utility.combine(newUuids, ',');
         SharedPreferences.Editor editor = preferences.getPreferences().edit();
         editor.putString("accountUuids", accountUuids);
 
@@ -525,7 +513,7 @@ public class Account implements BaseAccount {
                 }
             }
         }
-        String accountUuids = combineUuids(newUuids);
+        String accountUuids = Utility.combine(newUuids, ',');
         editor.putString("accountUuids", accountUuids);
         editor.commit();
         preferences.refreshAccounts();
@@ -1142,7 +1130,7 @@ public class Account implements BaseAccount {
             ident++;
         } while (gotOne);
 
-        if (newIdentities.size() == 0) {
+        if (newIdentities.isEmpty()) {
             String name = prefs.getString(mUuid + ".name", null);
             String email = prefs.getString(mUuid + ".email", null);
             boolean signatureUse = prefs.getBoolean(mUuid  + ".signatureUse", true);
