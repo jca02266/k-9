@@ -454,7 +454,7 @@ public class MessagingController implements Runnable {
                 try {
                     Store store = account.getRemoteStore();
 
-                    List <? extends Folder > remoteFolders = store.getPersonalNamespaces(false);
+                    List <? extends Folder > remoteFolders = store.getPersonalNamespaces(true);
 
                     LocalStore localStore = account.getLocalStore();
                     HashSet<String> remoteFolderNames = new HashSet<String>();
@@ -892,11 +892,14 @@ public class MessagingController implements Runnable {
                 if (K9.DEBUG)
                     Log.v(K9.LOG_TAG, "SYNC: About to get remote folder " + folder);
                 remoteFolder = remoteStore.getFolder(folder);
+                
+                if (remoteFolder == null) {
+                    throw new Exception("Store returned null remote folder for " + folder);
+                }
 
                 if (! verifyOrCreateRemoteSpecialFolder(account, folder, remoteFolder, listener)) {
                     return;
                 }
-
 
                 /*
                  * Synchronization process:
@@ -935,6 +938,8 @@ public class MessagingController implements Runnable {
              * Get the remote message count.
              */
             int remoteMessageCount = remoteFolder.getMessageCount();
+            
+            boolean syncMode = remoteFolder.isSyncMode();
 
             int visibleLimit = localFolder.getVisibleLimit();
 
@@ -951,7 +956,7 @@ public class MessagingController implements Runnable {
             final Date earliestDate = account.getEarliestPollDate();
 
 
-            if (remoteMessageCount > 0) {
+            if (remoteMessageCount > 0 || syncMode) {
                 /* Message numbers start at 1.  */
                 int remoteStart;
                 if (visibleLimit > 0) {
@@ -1001,21 +1006,30 @@ public class MessagingController implements Runnable {
              * Remove any messages that are in the local store but no longer on the remote store or are too old
              */
             ArrayList<Message> destroyMessages = new ArrayList<Message>();
-            for (Message localMessage : localMessages) {
-                if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX)) {
-//                if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX) && localMessage.isSet(Flag.X_DOWNLOADED_FULL)) {
-                      PendingCommand command = new PendingCommand();
-                      command.command = PENDING_COMMAND_APPEND;
-                      command.arguments = new String[] {
-                          localFolder.getName(),
-                          localMessage.getUid()
-                      };
-                      queuePendingCommand(account, command);
-                      processPendingCommands(account);
-                  }
-                  else if (remoteUidMap.get(localMessage.getUid()) == null) {
-                      destroyMessages.add(localMessage);
-                  }
+            if (remoteFolder.isSyncMode()) {
+                for (Message localMessage : localMessages) {
+                    Message remoteMessage = remoteUidMap.get(localMessage.getUid());
+                    if (remoteMessage != null && remoteMessage.isSet(Flag.DELETED)) {
+                        destroyMessages.add(localMessage);
+                    }
+                }
+            } else {
+                for (Message localMessage : localMessages) {
+                    if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX)) {
+                        // if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX) && localMessage.isSet(Flag.X_DOWNLOADED_FULL)) {
+                        PendingCommand command = new PendingCommand();
+                        command.command = PENDING_COMMAND_APPEND;
+                        command.arguments = new String[] {
+                            localFolder.getName(),
+                            localMessage.getUid()
+                        };
+                        queuePendingCommand(account, command);
+                        processPendingCommands(account);
+                    }
+                    else if (remoteUidMap.get(localMessage.getUid()) == null) {
+                        destroyMessages.add(localMessage);
+                    }
+                }
             }
 
             if (account.syncRemoteDeletions()) {
@@ -2215,7 +2229,7 @@ public class MessagingController implements Runnable {
 
         Store remoteStore = account.getRemoteStore();
         Folder remoteFolder = remoteStore.getFolder(folder);
-        if (!remoteFolder.exists() || !remoteFolder.isFlagSupported(flag)) {
+        if (remoteFolder == null || !remoteFolder.exists() || !remoteFolder.isFlagSupported(flag)) {
             return;
         }
 
