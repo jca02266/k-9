@@ -151,6 +151,10 @@ public class SettingsExporter {
             serializer.startTag(null, ACCOUNTS_ELEMENT);
             for (String accountUuid : exportAccounts) {
                 Account account = preferences.getAccount(accountUuid);
+                if (account.getStoreUri().startsWith("eas")) {
+                    // Not Implemented.
+                    continue;
+                }
                 writeAccount(serializer, account, prefs);
             }
             serializer.endTag(null, ACCOUNTS_ELEMENT);
