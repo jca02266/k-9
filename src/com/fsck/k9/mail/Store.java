@@ -107,6 +107,8 @@ public abstract class Store {
             return Pop3Store.decodeUri(uri);
         } else if (uri.startsWith("webdav")) {
             return WebDavStore.decodeUri(uri);
+//        } else if (uri.startsWith("eas")) {
+//            return EasStore.decodeUri(uri); // Not Implemented.
         } else {
             throw new IllegalArgumentException("Not a valid store URI");
         }
