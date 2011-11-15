@@ -1109,6 +1109,7 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
         new String[] {"JZlib", "http://www.jcraft.com/jzlib/"},
         new String[] {"Commons IO", "http://commons.apache.org/io/"},
         new String[] {"Mime4j", "http://james.apache.org/mime4j/"},
+        new String[] {"HtmlCleaner", "http://htmlcleaner.sourceforge.net/"},
     };
 
     private void onAbout() {
@@ -1153,7 +1154,9 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
                               "<div>mobylet-emoji is part of the " +
                               "<a href=\"http://mobylet.seasar.org/\">Mobylet</a> / " +
                               "<a href=\"http://www.apache.org/licenses/LICENSE-2.0.html\">Apache License ver2.0</a></div>"))
-        .append("</p>");
+        .append("</p><hr/><p>")
+        .append(getString(R.string.app_htmlcleaner_license));
+
 
         wv.loadDataWithBaseURL("file:///android_res/drawable/", html.toString(), "text/html", "utf-8", null);
         new AlertDialog.Builder(this)
