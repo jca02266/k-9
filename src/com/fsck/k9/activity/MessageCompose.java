@@ -30,7 +30,6 @@ import android.os.Parcelable;
 import android.provider.OpenableColumns;
 import android.text.util.Rfc822Tokenizer;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -82,6 +81,7 @@ import com.fsck.k9.mail.store.LocalStore.LocalAttachmentBody;
 public class MessageCompose extends K9Activity implements OnClickListener, OnFocusChangeListener {
     private static final int DIALOG_SAVE_OR_DISCARD_DRAFT_MESSAGE = 1;
 
+    private static final String ACTION_COMPOSE = "com.fsck.k9.intent.action.COMPOSE";
     private static final String ACTION_REPLY = "com.fsck.k9.intent.action.REPLY";
     private static final String ACTION_REPLY_ALL = "com.fsck.k9.intent.action.REPLY_ALL";
     private static final String ACTION_FORWARD = "com.fsck.k9.intent.action.FORWARD";
@@ -291,6 +291,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         }
         Intent i = new Intent(context, MessageCompose.class);
         i.putExtra(EXTRA_ACCOUNT, account.getUuid());
+        i.setAction(ACTION_COMPOSE);
         context.startActivity(i);
     }
 
@@ -544,6 +545,16 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         }
 
         mMessageFormat = mAccount.getMessageFormat();
+        if (mMessageFormat == MessageFormat.AUTO) {
+            if (ACTION_COMPOSE.equals(action)) {
+                mMessageFormat = MessageFormat.TEXT;
+            } else if (mSourceMessageBody != null) {
+                // mSourceMessageBody is set to something when replying to and forwarding decrypted
+                // messages, so we set the format to plain text.
+                mMessageFormat = MessageFormat.TEXT;
+            }
+        }
+
         mReadReceipt = mAccount.isMessageReadReceiptAlways();
         mQuoteStyle = mAccount.getQuoteStyle();
 
@@ -675,9 +686,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
              * it wrong! So go fix your program or get AOSP to change the documentation.
              */
         }
-        //TODO: Use constant Intent.ACTION_SEND_MULTIPLE once we drop Android 1.5 support
-        else if (Intent.ACTION_SEND.equals(action) ||
-                 "android.intent.action.SEND_MULTIPLE".equals(action)) {
+        else if (Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)) {
             /*
              * Note: Here we allow a slight deviation from the documentated behavior.
              * EXTRA_TEXT is used as message body (if available) regardless of the MIME
@@ -858,7 +867,6 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         mBccWrapper.setVisibility(savedInstanceState
                                   .getBoolean(STATE_KEY_BCC_SHOWN) ? View.VISIBLE : View.GONE);
         showOrHideQuotedText((QuotedTextMode)savedInstanceState.getSerializable(STATE_KEY_QUOTED_TEXT_MODE));
-
         if (mQuotedTextMode != QuotedTextMode.NONE && mMessageFormat == MessageFormat.HTML) {
             mQuotedHtmlContent = (InsertableHtmlContent) savedInstanceState.getSerializable(STATE_KEY_HTML_QUOTE);
             if (mQuotedHtmlContent != null && mQuotedHtmlContent.getQuotedContent() != null) {
@@ -1958,13 +1966,10 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
     @Override
     public void onBackPressed() {
-        // This will be called either automatically for you on 2.0
-        // or later, or by the code above on earlier versions of the
-        // platform.
         if (mDraftNeedsSaving) {
             showDialog(DIALOG_SAVE_OR_DISCARD_DRAFT_MESSAGE);
         } else {
-            finish();
+            super.onBackPressed();
         }
     }
 
@@ -1990,24 +1995,6 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                    .create();
         }
         return super.onCreateDialog(id);
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (
-            // TODO - when we move to android 2.0, uncomment this.
-            // android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.ECLAIR &&
-
-            keyCode == KeyEvent.KEYCODE_BACK
-            && event.getRepeatCount() == 0
-            && K9.manageBack()) {
-            // Take care of calling this method on earlier versions of
-            // the platform where it doesn't exist.
-            onBackPressed();
-            return true;
-        }
-
-        return super.onKeyDown(keyCode, event);
     }
 
     /**
@@ -2417,6 +2404,12 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
      * @throws MessagingException
      */
     private void populateUIWithQuotedMessage(boolean shown) throws MessagingException {
+        if (mMessageFormat == MessageFormat.AUTO) {
+            mMessageFormat = MimeUtility.findFirstPartByMimeType(mSourceMessage, "text/html") == null
+                    ? MessageFormat.TEXT
+                    : MessageFormat.HTML;
+        }
+
         // TODO -- I am assuming that mSourceMessageBody will always be a text part.  Is this a safe assumption?
 
         // Handle the original message in the reply
