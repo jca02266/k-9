@@ -1,9 +1,10 @@
 package com.fsck.k9.activity.setup;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Vector;
+import java.util.List;
 
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +17,6 @@ import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceClickListener;
-import android.view.KeyEvent;
 import android.widget.Toast;
 
 import com.fsck.k9.K9;
@@ -134,8 +134,8 @@ public class Prefs extends K9PreferenceActivity {
         addPreferencesFromResource(R.xml.global_preferences);
 
         mLanguage = (ListPreference) findPreference(PREFERENCE_LANGUAGE);
-        Vector<CharSequence> entryVector = new Vector<CharSequence>(Arrays.asList(mLanguage.getEntries()));
-        Vector<CharSequence> entryValueVector = new Vector<CharSequence>(Arrays.asList(mLanguage.getEntryValues()));
+        List<CharSequence> entryVector = new ArrayList<CharSequence>(Arrays.asList(mLanguage.getEntries()));
+        List<CharSequence> entryValueVector = new ArrayList<CharSequence>(Arrays.asList(mLanguage.getEntryValues()));
         String supportedLanguages[] = getResources().getStringArray(R.array.supported_languages);
         HashSet<String> supportedLanguageSet = new HashSet<String>(Arrays.asList(supportedLanguages));
         for (int i = entryVector.size() - 1; i > -1; --i) {
@@ -192,11 +192,13 @@ public class Prefs extends K9PreferenceActivity {
         mConfirmActions = (CheckBoxListPreference) findPreference(PREFERENCE_CONFIRM_ACTIONS);
         mConfirmActions.setItems(new CharSequence[] {
                                      getString(R.string.global_settings_confirm_action_delete),
+                                     getString(R.string.global_settings_confirm_action_delete_starred),
                                      getString(R.string.global_settings_confirm_action_spam),
                                      getString(R.string.global_settings_confirm_action_mark_all_as_read)
                                  });
         mConfirmActions.setCheckedItems(new boolean[] {
                                             K9.confirmDelete(),
+                                            K9.confirmDeleteStarred(),
                                             K9.confirmSpam(),
                                             K9.confirmMarkAllAsRead()
                                         });
@@ -265,7 +267,7 @@ public class Prefs extends K9PreferenceActivity {
         mZoomControlsEnabled.setChecked(K9.zoomControlsEnabled());
 
         mMobileOptimizedLayout = (CheckBoxPreference) findPreference(PREFERENCE_MESSAGEVIEW_MOBILE_LAYOUT);
-        if (Integer.parseInt(Build.VERSION.SDK)  <= 7) {
+        if (Build.VERSION.SDK_INT <= 7) {
             mMobileOptimizedLayout.setEnabled(false);
         }
 
@@ -355,8 +357,9 @@ public class Prefs extends K9PreferenceActivity {
         K9.setManageBack(mManageBack.isChecked());
         K9.setStartIntegratedInbox(!mHideSpecialAccounts.isChecked() && mStartIntegratedInbox.isChecked());
         K9.setConfirmDelete(mConfirmActions.getCheckedItems()[0]);
-        K9.setConfirmSpam(mConfirmActions.getCheckedItems()[1]);
-        K9.setConfirmMarkAllAsRead(mConfirmActions.getCheckedItems()[2]);
+        K9.setConfirmDeleteStarred(mConfirmActions.getCheckedItems()[1]);
+        K9.setConfirmSpam(mConfirmActions.getCheckedItems()[2]);
+        K9.setConfirmMarkAllAsRead(mConfirmActions.getCheckedItems()[3]);
         K9.setKeyguardPrivacy(mPrivacyMode.isChecked());
         K9.setMeasureAccounts(mMeasureAccounts.isChecked());
         K9.setCountSearchMessages(mCountSearch.isChecked());
@@ -400,16 +403,15 @@ public class Prefs extends K9PreferenceActivity {
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            saveSettings();
-            if (K9.manageBack()) {
-                Accounts.listAccounts(this);
-                finish();
-                return true;
-            }
+    public void onBackPressed() {
+        saveSettings();
+
+        if (K9.manageBack()) {
+            Accounts.listAccounts(this);
+            finish();
+        } else {
+            super.onBackPressed();
         }
-        return super.onKeyDown(keyCode, event);
     }
 
     private void onFontSizeSettings() {

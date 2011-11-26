@@ -18,6 +18,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.style.AbsoluteSizeSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.util.Log;
@@ -25,7 +26,6 @@ import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -554,6 +554,9 @@ public class MessageList
 
     public static Intent actionHandleFolderIntent(Context context, Account account, String folder) {
         Intent intent = new Intent(context, MessageList.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.putExtra(EXTRA_ACCOUNT, account.getUuid());
 
         if (folder != null) {
@@ -573,6 +576,9 @@ public class MessageList
         }
         intent.putExtra(EXTRA_INTEGRATE, integrate);
         intent.putExtra(EXTRA_TITLE, title);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(intent);
     }
 
@@ -589,6 +595,9 @@ public class MessageList
         intent.putExtra(EXTRA_ACCOUNT_UUIDS, searchSpecification.getAccountUuids());
         intent.putExtra(EXTRA_FOLDER_NAMES, searchSpecification.getFolderNames());
         intent.putExtra(EXTRA_TITLE, title);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(intent);
     }
 
@@ -618,6 +627,12 @@ public class MessageList
 
         mInflater = getLayoutInflater();
         initializeLayout();
+
+        // Only set "touchable" when we're first starting up the activity.
+        // Otherwise we get force closes when the user toggles it midstream.
+        mTouchView = K9.messageListTouchable();
+        mPreviewLines = K9.messageListPreviewLines();
+
         onNewIntent(getIntent());
     }
 
@@ -625,21 +640,29 @@ public class MessageList
     public void onNewIntent(Intent intent) {
         setIntent(intent); // onNewIntent doesn't autoset our "internal" intent
 
-        // Only set "touchable" when we're first starting up the activity.
-        // Otherwise we get force closes when the user toggles it midstream.
-        mTouchView = K9.messageListTouchable();
-        mPreviewLines = K9.messageListPreviewLines();
-
         String accountUuid = intent.getStringExtra(EXTRA_ACCOUNT);
-        mAccount = Preferences.getPreferences(this).getAccount(accountUuid);
-        mFolderName = intent.getStringExtra(EXTRA_FOLDER);
-        mQueryString = intent.getStringExtra(EXTRA_QUERY);
+        Account account = Preferences.getPreferences(this).getAccount(accountUuid);
+        String folderName = intent.getStringExtra(EXTRA_FOLDER);
+        String queryString = intent.getStringExtra(EXTRA_QUERY);
 
-        if (mAccount != null && !mAccount.isAvailable(this)) {
+        if (account != null && !account.isAvailable(this)) {
             Log.i(K9.LOG_TAG, "not opening MessageList of unavailable account");
             onAccountUnavailable();
             return;
         }
+
+        if (account != null && account.equals(mAccount) &&
+                folderName != null && folderName.equals(mFolderName) &&
+                ((queryString != null && queryString.equals(mQueryString)) ||
+                        (queryString == null && mQueryString == null))) {
+            // We're likely just returning from the MessageView activity with "Manage back button"
+            // enabled. So just leave the activity in the state it was left in.
+            return;
+        }
+
+        mAccount = account;
+        mFolderName = folderName;
+        mQueryString = queryString;
 
         String queryFlags = intent.getStringExtra(EXTRA_QUERY_FLAGS);
         if (queryFlags != null) {
@@ -818,7 +841,7 @@ public class MessageList
         mBatchDoneButton.setOnClickListener(this);
 
         // Gesture detection
-        gestureDetector = new GestureDetector(new MyGestureDetector());
+        gestureDetector = new GestureDetector(new MyGestureDetector(true));
         gestureListener = new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -875,9 +898,6 @@ public class MessageList
 
     @Override
     public void onBackPressed() {
-        // This will be called either automatically for you on 2.0
-        // or later, or by the code above on earlier versions of the
-        // platform.
         if (K9.manageBack()) {
             if (mQueryString == null) {
                 onShowFolderList();
@@ -885,24 +905,12 @@ public class MessageList
                 onAccounts();
             }
         } else {
-            finish();
+            super.onBackPressed();
         }
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (
-            // XXX TODO - when we go to android 2.0, uncomment this
-            // android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.ECLAIR &&
-            keyCode == KeyEvent.KEYCODE_BACK
-            && event.getRepeatCount() == 0
-        ) {
-            // Take care of calling this method on earlier versions of
-            // the platform where it doesn't exist.
-            onBackPressed();
-            return true;
-        }
-
         // Shortcuts that work no matter what is selected
         switch (keyCode) {
 
@@ -1070,7 +1078,7 @@ public class MessageList
             MessageReference ref = message.message.makeMessageReference();
             Log.i(K9.LOG_TAG, "MessageList sending message " + ref);
 
-            MessageView.actionView(this, ref, messageRefs, getIntent());
+            MessageView.actionView(this, ref, messageRefs);
         }
 
         /*
@@ -1660,35 +1668,34 @@ public class MessageList
         }
     }
 
-    class MyGestureDetector extends SimpleOnGestureListener {
-        @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            if (e2 == null || e1 == null)
-                return true;
+    @Override
+    protected void onSwipeRightToLeft(final MotionEvent e1, final MotionEvent e2) {
+        // Handle right-to-left as an un-select
+        handleSwipe(e1, false);
+    }
 
-            float deltaX = e2.getX() - e1.getX(),
-                  deltaY = e2.getY() - e1.getY();
+    @Override
+    protected void onSwipeLeftToRight(final MotionEvent e1, final MotionEvent e2) {
+        // Handle left-to-right as a select.
+        handleSwipe(e1, true);
+    }
 
-            boolean movedAcross = (Math.abs(deltaX) > Math.abs(deltaY * 4));
-            boolean steadyHand = (Math.abs(deltaX / deltaY) > 2);
+    /**
+     * Handle a select or unselect swipe event
+     * @param downMotion Event that started the swipe
+     * @param selected true if this was an attempt to select (i.e. left to right).
+     */
+    private void handleSwipe(final MotionEvent downMotion, final boolean selected) {
+        int position = mListView.pointToPosition((int) downMotion.getX(), (int) downMotion.getY());
+        if (position != AdapterView.INVALID_POSITION) {
+            MessageInfoHolder msgInfoHolder = (MessageInfoHolder) mAdapter.getItem(position);
 
-            if (movedAcross && steadyHand) {
-                boolean selected = (deltaX > 0);
-                int position = mListView.pointToPosition((int)e1.getX(), (int)e1.getY());
-
-                if (position != AdapterView.INVALID_POSITION) {
-                    MessageInfoHolder msgInfoHolder = (MessageInfoHolder) mAdapter.getItem(position);
-
-                    if (msgInfoHolder != null && msgInfoHolder.selected != selected) {
-                        msgInfoHolder.selected = selected;
-                        mSelectedCount += (selected ? 1 : -1);
-                        mAdapter.notifyDataSetChanged();
-                        toggleBatchButtons();
-                    }
-                }
+            if (msgInfoHolder != null && msgInfoHolder.selected != selected) {
+                msgInfoHolder.selected = selected;
+                mSelectedCount += (selected ? 1 : -1);
+                mAdapter.notifyDataSetChanged();
+                toggleBatchButtons();
             }
-
-            return false;
         }
     }
 
@@ -1978,7 +1985,7 @@ public class MessageList
                 }
             }
 
-            if (messagesToSearch.size() > 0) {
+            if (!messagesToSearch.isEmpty()) {
                 mController.searchLocalMessages(mAccountUuids, mFolderNames, messagesToSearch.toArray(EMPTY_MESSAGE_ARRAY), mQueryString, mIntegrate, mQueryFlags, mForbiddenFlags,
                 new MessagingListener() {
                     @Override
@@ -1988,11 +1995,11 @@ public class MessageList
                 });
             }
 
-            if (messagesToRemove.size() > 0) {
+            if (!messagesToRemove.isEmpty()) {
                 removeMessages(messagesToRemove);
             }
 
-            if (messagesToAdd.size() > 0) {
+            if (!messagesToAdd.isEmpty()) {
                 mHandler.addMessages(messagesToAdd);
             }
 
@@ -2160,7 +2167,7 @@ public class MessageList
                                 0,
                                 noSender.length(),
                                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    str.setSpan(K9.createAbsoluteSizeSpan(mFontSizes.getMessageListSender()),
+                    str.setSpan(new AbsoluteSizeSpan(mFontSizes.getMessageListSender(), true),
                                 0,
                                 noSender.length(),
                                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -2249,7 +2256,7 @@ public class MessageList
                             0,
                             message.sender.length() + 1,
                             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                str.setSpan(K9.createAbsoluteSizeSpan(mFontSizes.getMessageListSender()),
+                str.setSpan(new AbsoluteSizeSpan(mFontSizes.getMessageListSender(), true),
                             0,
                             message.sender.length() + 1,
                             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

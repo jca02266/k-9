@@ -296,7 +296,7 @@ public class MessagingController implements Runnable {
                               " Command '" + command.description + "' completed");
 
                     for (MessagingListener l : getListeners(command.listener)) {
-                        l.controllerCommandCompleted(mCommands.size() > 0);
+                        l.controllerCommandCompleted(!mCommands.isEmpty());
                     }
                 }
             } catch (Exception e) {
@@ -417,7 +417,7 @@ public class MessagingController implements Runnable {
 
                 Folder[] folderArray = localFolders.toArray(EMPTY_FOLDER_ARRAY);
 
-                if (refreshRemote || localFolders.size() == 0) {
+                if (refreshRemote || localFolders.isEmpty()) {
                     doRefreshRemote(account, listener);
                     return;
                 }
@@ -650,15 +650,10 @@ public class MessagingController implements Runnable {
             accountUuidsSet.addAll(Arrays.asList(accountUuids));
         }
         final Preferences prefs = Preferences.getPreferences(mApplication.getApplicationContext());
-        Account[] accounts = prefs.getAccounts();
         List<LocalFolder> foldersToSearch = null;
         boolean displayableOnly = false;
         boolean noSpecialFolders = true;
-        for (final Account account : accounts) {
-            if (!account.isAvailable(mApplication)) {
-                Log.d(K9.LOG_TAG, "searchLocalMessagesSynchronous() ignores account that is not available");
-                continue;
-            }
+        for (final Account account : prefs.getAvailableAccounts()) {
             if (accountUuids != null && !accountUuidsSet.contains(account.getUuid())) {
                 continue;
             }
@@ -1225,7 +1220,7 @@ public class MessagingController implements Runnable {
         messages.clear();
         final ArrayList<Message> largeMessages = new ArrayList<Message>();
         final ArrayList<Message> smallMessages = new ArrayList<Message>();
-        if (unsyncedMessages.size() > 0) {
+        if (!unsyncedMessages.isEmpty()) {
 
             /*
              * Reverse the order of the messages. Depending on the server this may get us
@@ -1481,7 +1476,7 @@ public class MessagingController implements Runnable {
             }
 
         });
-        if (chunk.size() > 0) {
+        if (!chunk.isEmpty()) {
             writeUnsyncedMessages(chunk, localFolder, account, folder);
             chunk.clear();
         }
@@ -2227,7 +2222,7 @@ public class MessagingController implements Runnable {
                 }
             }
 
-            if (messages.size() == 0) {
+            if (messages.isEmpty()) {
                 return;
             }
             remoteFolder.setFlags(messages.toArray(EMPTY_MESSAGE_ARRAY), new Flag[] { flag }, newState);
@@ -2837,8 +2832,7 @@ public class MessagingController implements Runnable {
 
     public void sendPendingMessages(MessagingListener listener) {
         final Preferences prefs = Preferences.getPreferences(mApplication.getApplicationContext());
-        Account[] accounts = prefs.getAccounts();
-        for (Account account : accounts) {
+        for (Account account : prefs.getAvailableAccounts()) {
             sendPendingMessages(account, listener);
         }
     }
@@ -3276,9 +3270,11 @@ public class MessagingController implements Runnable {
                     localSrcFolder.copyMessages(messages, localDestFolder);
                 } else {
                     localSrcFolder.moveMessages(messages, localDestFolder);
-                    for (String origUid : origUidMap.keySet()) {
+                    for (Map.Entry<String, Message> entry : origUidMap.entrySet()) {
+                        String origUid = entry.getKey();
+                        Message message = entry.getValue();
                         for (MessagingListener l : getListeners()) {
-                            l.messageUidChanged(account, srcFolder, origUid, origUidMap.get(origUid).getUid());
+                            l.messageUidChanged(account, srcFolder, origUid, message.getUid());
                         }
                         unsuppressMessage(account, srcFolder, origUid);
                     }
@@ -3596,13 +3592,12 @@ public class MessagingController implements Runnable {
                         Log.i(K9.LOG_TAG, "Starting mail check");
                     Preferences prefs = Preferences.getPreferences(context);
 
-                    Account[] accounts;
+                    Collection<Account> accounts;
                     if (account != null) {
-                        accounts = new Account[] {
-                            account
-                        };
+                        accounts = new ArrayList<Account>(1);
+                        accounts.add(account);
                     } else {
-                        accounts = prefs.getAccounts();
+                        accounts = prefs.getAvailableAccounts();
                     }
 
                     for (final Account account : accounts) {
@@ -4228,7 +4223,7 @@ public class MessagingController implements Runnable {
                 names.add(folder.getName());
             }
 
-            if (names.size() > 0) {
+            if (!names.isEmpty()) {
                 PushReceiver receiver = new MessagingControllerPushReceiver(mApplication, account, this);
                 int maxPushFolders = account.getMaxPushFolders();
 

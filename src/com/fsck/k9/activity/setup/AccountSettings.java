@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.preference.*;
 import android.util.Log;
-import android.view.KeyEvent;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -93,9 +92,11 @@ public class AccountSettings extends K9PreferenceActivity {
     private static final String PREFERENCE_QUOTE_STYLE = "quote_style";
     private static final String PREFERENCE_DEFAULT_QUOTED_TEXT_SHOWN = "default_quoted_text_shown";
     private static final String PREFERENCE_REPLY_AFTER_QUOTE = "reply_after_quote";
+    private static final String PREFERENCE_STRIP_SIGNATURE = "strip_signature";
     private static final String PREFERENCE_SYNC_REMOTE_DELETIONS = "account_sync_remote_deletetions";
     private static final String PREFERENCE_CRYPTO_APP = "crypto_app";
     private static final String PREFERENCE_CRYPTO_AUTO_SIGNATURE = "crypto_auto_signature";
+    private static final String PREFERENCE_CRYPTO_AUTO_ENCRYPT = "crypto_auto_encrypt";
 
     private static final String PREFERENCE_LOCAL_STORAGE_PROVIDER = "local_storage_provider";
 
@@ -152,6 +153,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private EditTextPreference mAccountQuotePrefix;
     private CheckBoxPreference mAccountDefaultQuotedTextShown;
     private CheckBoxPreference mReplyAfterQuote;
+    private CheckBoxPreference mStripSignature;
     private CheckBoxPreference mSyncRemoteDeletions;
     private CheckBoxPreference mSaveAllHeaders;
     private CheckBoxPreference mPushPollOnConnect;
@@ -159,6 +161,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private ListPreference mMaxPushFolders;
     private ListPreference mCryptoApp;
     private CheckBoxPreference mCryptoAutoSignature;
+    private CheckBoxPreference mCryptoAutoEncrypt;
 
     private ListPreference mLocalStorageProvider;
 
@@ -240,6 +243,9 @@ public class AccountSettings extends K9PreferenceActivity {
 
         mReplyAfterQuote = (CheckBoxPreference) findPreference(PREFERENCE_REPLY_AFTER_QUOTE);
         mReplyAfterQuote.setChecked(mAccount.isReplyAfterQuote());
+
+        mStripSignature = (CheckBoxPreference) findPreference(PREFERENCE_STRIP_SIGNATURE);
+        mStripSignature.setChecked(mAccount.isStripSignature());
 
         mComposingScreen = (PreferenceScreen) findPreference(PREFERENCE_SCREEN_COMPOSING);
 
@@ -676,14 +682,19 @@ public class AccountSettings extends K9PreferenceActivity {
         mCryptoAutoSignature = (CheckBoxPreference) findPreference(PREFERENCE_CRYPTO_AUTO_SIGNATURE);
         mCryptoAutoSignature.setChecked(mAccount.getCryptoAutoSignature());
 
+        mCryptoAutoEncrypt = (CheckBoxPreference) findPreference(PREFERENCE_CRYPTO_AUTO_ENCRYPT);
+        mCryptoAutoEncrypt.setChecked(mAccount.isCryptoAutoEncrypt());
+
         handleCryptoAppDependencies();
     }
 
     private void handleCryptoAppDependencies() {
         if ("".equals(mCryptoApp.getValue())) {
             mCryptoAutoSignature.setEnabled(false);
+            mCryptoAutoEncrypt.setEnabled(false);
         } else {
             mCryptoAutoSignature.setEnabled(true);
+            mCryptoAutoEncrypt.setEnabled(true);
         }
     }
 
@@ -726,8 +737,10 @@ public class AccountSettings extends K9PreferenceActivity {
         mAccount.setQuotePrefix(mAccountQuotePrefix.getText());
         mAccount.setDefaultQuotedTextShown(mAccountDefaultQuotedTextShown.isChecked());
         mAccount.setReplyAfterQuote(mReplyAfterQuote.isChecked());
+        mAccount.setStripSignature(mStripSignature.isChecked());
         mAccount.setCryptoApp(mCryptoApp.getValue());
         mAccount.setCryptoAutoSignature(mCryptoAutoSignature.isChecked());
+        mAccount.setCryptoAutoEncrypt(mCryptoAutoEncrypt.isChecked());
         mAccount.setLocalStorageProviderId(mLocalStorageProvider.getValue());
 
         // In webdav account we use the exact folder name also for inbox,
@@ -809,11 +822,9 @@ public class AccountSettings extends K9PreferenceActivity {
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            saveSettings();
-        }
-        return super.onKeyDown(keyCode, event);
+    public void onBackPressed() {
+        saveSettings();
+        super.onBackPressed();
     }
 
     private void onCompositionSettings() {
@@ -910,8 +921,8 @@ public class AccountSettings extends K9PreferenceActivity {
                 }
             }
 
-            allFolderValues = new String[folders.size()+1];
-            allFolderLabels = new String[folders.size()+1];
+            allFolderValues = new String[folders.size() + 1];
+            allFolderLabels = new String[folders.size() + 1];
 
             allFolderValues[0] = K9.FOLDER_NONE;
             allFolderLabels[0] = K9.FOLDER_NONE;
