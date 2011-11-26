@@ -1,7 +1,5 @@
 package com.fsck.k9.activity;
 
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningTaskInfo;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -29,47 +27,18 @@ import com.fsck.k9.view.SingleMessageView;
 import com.fsck.k9.view.AttachmentView.AttachmentFileDownloadCallback;
 
 import java.io.File;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class MessageView extends K9Activity implements OnClickListener {
     private static final String EXTRA_MESSAGE_REFERENCE = "com.fsck.k9.MessageView_messageReference";
     private static final String EXTRA_MESSAGE_REFERENCES = "com.fsck.k9.MessageView_messageReferences";
-    private static final String EXTRA_ORIGINATING_INTENT = "com.fsck.k9.MessageView_originatingIntent";
     private static final String EXTRA_NEXT = "com.fsck.k9.MessageView_next";
+    private static final String EXTRA_SCROLL_PERCENTAGE = "com.fsck.k9.MessageView_scrollPercentage";
     private static final String SHOW_PICTURES = "showPictures";
     private static final String STATE_PGP_DATA = "pgpData";
     private static final int ACTIVITY_CHOOSE_FOLDER_MOVE = 1;
     private static final int ACTIVITY_CHOOSE_FOLDER_COPY = 2;
     private static final int ACTIVITY_CHOOSE_DIRECTORY = 3;
-
-    /**
-     * Whether parent class have the onBackPressed() method (with no argument)
-     */
-    private static final boolean HAS_SUPER_ON_BACK_METHOD;
-    static {
-        boolean hasOnBackMethod;
-        try {
-            final Class <? super MessageView > superClass = MessageView.class.getSuperclass();
-            final Method method = superClass.getMethod("onBackPressed", new Class[] {});
-            hasOnBackMethod = (method.getModifiers() & Modifier.PUBLIC) == Modifier.PUBLIC;
-        } catch (final SecurityException e) {
-            if (K9.DEBUG) {
-                Log.v(K9.LOG_TAG, "Security exception while checking for 'onBackPressed' method", e);
-            }
-            hasOnBackMethod = false;
-        } catch (final NoSuchMethodException e) {
-            hasOnBackMethod = false;
-        }
-        HAS_SUPER_ON_BACK_METHOD = hasOnBackMethod;
-    }
-
-    /**
-     * If user opt-in for the "Manage BACK button", we have to remember how to get back to the
-     * originating activity (just recreating a new Intent could lose the calling activity state)
-     */
-    private Intent mCreatorIntent;
 
     private SingleMessageView mMessageView;
 
@@ -82,14 +51,13 @@ public class MessageView extends K9Activity implements OnClickListener {
     private View mArchive;
     private View mMove;
     private View mSpam;
-    private ToggleScrollView mToggleScrollView;
     private Account mAccount;
     private MessageReference mMessageReference;
     private ArrayList<MessageReference> mMessageReferences;
     private Message mMessage;
     private static final int PREVIOUS = 1;
     private static final int NEXT = 2;
-    private int mLastDirection = PREVIOUS;
+    private int mLastDirection = (K9.messageViewShowNext()) ? NEXT : PREVIOUS;
     private MessagingController mController = MessagingController.getInstance(getApplication());
     private MessageReference mNextMessage = null;
     private MessageReference mPreviousMessage = null;
@@ -132,14 +100,14 @@ public class MessageView extends K9Activity implements OnClickListener {
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_UP) {
             // Text selection is finished. Allow scrolling again.
-            mToggleScrollView.setScrolling(true);
+            mTopView.setScrolling(true);
         } else if (K9.zoomControlsEnabled()) {
             // If we have system zoom controls enabled, disable scrolling so the screen isn't wiggling around while
             // trying to zoom.
             if (ev.getAction() == MotionEvent.ACTION_POINTER_2_DOWN) {
-                mToggleScrollView.setScrolling(false);
+                mTopView.setScrolling(false);
             } else if (ev.getAction() == MotionEvent.ACTION_POINTER_2_UP) {
-                mToggleScrollView.setScrolling(true);
+                mTopView.setScrolling(true);
             }
         }
         return super.dispatchTouchEvent(ev);
@@ -149,7 +117,7 @@ public class MessageView extends K9Activity implements OnClickListener {
     public boolean dispatchKeyEvent(KeyEvent event) {
         boolean ret = false;
         if (KeyEvent.ACTION_DOWN == event.getAction()) {
-            ret = onKeyDown(event.getKeyCode(), event);
+            ret = onCustomKeyDown(event.getKeyCode(), event);
         }
         if (!ret) {
             ret = super.dispatchKeyEvent(event);
@@ -157,29 +125,36 @@ public class MessageView extends K9Activity implements OnClickListener {
         return ret;
     }
 
-    @Override
-    public boolean onKeyDown(final int keyCode, final KeyEvent event) {
-        if (
-            // XXX TODO - when we go to android 2.0, uncomment this
-            // android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.ECLAIR &&
-            keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
-            // Take care of calling this method on earlier versions of
-            // the platform where it doesn't exist.
-            onBackPressed();
-            return true;
-        }
+    /**
+     * Handle hotkeys
+     *
+     * <p>
+     * This method is called by {@link #dispatchKeyEvent(KeyEvent)} before any view had the chance
+     * to consume this key event.
+     * </p>
+     *
+     * @param keyCode
+     *         The value in {@code event.getKeyCode()}.
+     * @param event
+     *         Description of the key event.
+     *
+     * @return {@code true} if this event was consumed.
+     */
+    public boolean onCustomKeyDown(final int keyCode, final KeyEvent event) {
         switch (keyCode) {
         case KeyEvent.KEYCODE_VOLUME_UP: {
             if (K9.useVolumeKeysForNavigationEnabled()) {
                 onNext();
                 return true;
             }
+            break;
         }
         case KeyEvent.KEYCODE_VOLUME_DOWN: {
             if (K9.useVolumeKeysForNavigationEnabled()) {
                 onPrevious();
                 return true;
             }
+            break;
         }
         case KeyEvent.KEYCODE_SHIFT_LEFT:
         case KeyEvent.KEYCODE_SHIFT_RIGHT: {
@@ -187,7 +162,7 @@ public class MessageView extends K9Activity implements OnClickListener {
              * Selecting text started via shift key. Disable scrolling as
              * this causes problems when selecting text.
              */
-            mToggleScrollView.setScrolling(false);
+            mTopView.setScrolling(false);
             break;
         }
         case KeyEvent.KEYCODE_DEL: {
@@ -254,7 +229,7 @@ public class MessageView extends K9Activity implements OnClickListener {
             return true;
         }
         }
-        return super.onKeyDown(keyCode, event);
+        return false;
     }
 
     @Override
@@ -272,29 +247,12 @@ public class MessageView extends K9Activity implements OnClickListener {
 
     @Override
     public void onBackPressed() {
-        // This will be called either automatically for you on 2.0
-        // or later, or by the code above on earlier versions of the
-        // platform.
         if (K9.manageBack()) {
-            final ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-            // retrieve the current+previous tasks
-            final List<RunningTaskInfo> runningTasks = activityManager.getRunningTasks(2);
-            final RunningTaskInfo previousTask = runningTasks.get(1);
-            final String originatingActivity = mCreatorIntent.getComponent().getClassName();
-            if (originatingActivity.equals(previousTask.topActivity.getClassName())) {
-                // we can safely just finish ourself since the most recent task matches our creator
-                // this enable us not to worry about restoring the state of our creator
-            } else {
-                // the previous task top activity doesn't match our creator (previous task is from
-                // another app and user used long-pressed-HOME to display MessageView)
-                // launching our creator
-                startActivity(mCreatorIntent);
-            }
+            String folder = (mMessage != null) ? mMessage.getFolder().getName() : null;
+            MessageList.actionHandleFolder(this, mAccount, folder);
             finish();
-        } else if (HAS_SUPER_ON_BACK_METHOD) {
-            super.onBackPressed();
         } else {
-            finish();
+            super.onBackPressed();
         }
     }
 
@@ -349,27 +307,13 @@ public class MessageView extends K9Activity implements OnClickListener {
 
     }
 
-    /**
-     * @param context
-     * @param messRef
-     * @param messReferences
-     * @param originatingIntent
-     *         The intent that allow us to get back to the calling screen, for when the 'Manage
-     *         "Back" button' option is enabled. Never {@code null}.
-     */
     public static void actionView(Context context, MessageReference messRef,
-            ArrayList<MessageReference> messReferences, final Intent originatingIntent) {
+            ArrayList<MessageReference> messReferences) {
         Intent i = new Intent(context, MessageView.class);
         i.putExtra(EXTRA_MESSAGE_REFERENCE, messRef);
         i.putParcelableArrayListExtra(EXTRA_MESSAGE_REFERENCES, messReferences);
-        i.putExtra(EXTRA_ORIGINATING_INTENT, originatingIntent);
         i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(i);
-    }
-
-    @Override
-    protected void onNewIntent(final Intent intent) {
-        mCreatorIntent = intent.getParcelableExtra(EXTRA_ORIGINATING_INTENT);
     }
 
     @Override
@@ -379,7 +323,7 @@ public class MessageView extends K9Activity implements OnClickListener {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.message_view);
 
-        mTopView = mToggleScrollView = (ToggleScrollView) findViewById(R.id.top_view);
+        mTopView = (ToggleScrollView) findViewById(R.id.top_view);
         mMessageView = (SingleMessageView) findViewById(R.id.message_view);
 
         //set a callback for the attachment view. With this callback the attachmentview
@@ -408,15 +352,19 @@ public class MessageView extends K9Activity implements OnClickListener {
                 }
             };
         });
+
         mMessageView.initialize(this);
+
+        // Register the ScrollView's listener to handle scrolling to last known location on resume.
+        mController.addListener(mTopView.getListener());
+        mMessageView.setListeners(mController.getListeners());
 
         setTitle("");
         final Intent intent = getIntent();
 
-        mCreatorIntent = getIntent().getParcelableExtra(EXTRA_ORIGINATING_INTENT);
-
         Uri uri = intent.getData();
         if (icicle != null) {
+            // TODO This code seems unnecessary since the icicle should already be thawed in onRestoreInstanceState().
             mMessageReference = icicle.getParcelable(EXTRA_MESSAGE_REFERENCE);
             mMessageReferences = icicle.getParcelableArrayList(EXTRA_MESSAGE_REFERENCES);
             mPgpData = (PgpData) icicle.getSerializable(STATE_PGP_DATA);
@@ -530,6 +478,7 @@ public class MessageView extends K9Activity implements OnClickListener {
         outState.putParcelableArrayList(EXTRA_MESSAGE_REFERENCES, mMessageReferences);
         outState.putSerializable(STATE_PGP_DATA, mPgpData);
         outState.putBoolean(SHOW_PICTURES, mMessageView.showPictures());
+        outState.putDouble(EXTRA_SCROLL_PERCENTAGE, mTopView.getScrollPercentage());
     }
 
     @Override
@@ -538,6 +487,7 @@ public class MessageView extends K9Activity implements OnClickListener {
         mPgpData = (PgpData) savedInstanceState.getSerializable(STATE_PGP_DATA);
         mMessageView.updateCryptoLayout(mAccount.getCryptoProvider(), mPgpData, mMessage);
         mMessageView.setLoadPictures(savedInstanceState.getBoolean(SHOW_PICTURES));
+        mTopView.setScrollPercentage(savedInstanceState.getDouble(EXTRA_SCROLL_PERCENTAGE));
     }
 
     private void displayMessage(MessageReference ref) {
@@ -657,11 +607,13 @@ public class MessageView extends K9Activity implements OnClickListener {
             onAccountUnavailable();
             return;
         }
+        mController.addListener(mTopView.getListener());
         StorageManager.getInstance(getApplication()).addListener(mStorageListener);
     }
 
     @Override
     protected void onPause() {
+        mController.removeListener(mTopView.getListener());
         StorageManager.getInstance(getApplication()).removeListener(mStorageListener);
         super.onPause();
     }
@@ -676,7 +628,7 @@ public class MessageView extends K9Activity implements OnClickListener {
      * Called from UI thread when user select Delete
      */
     private void onDelete() {
-        if (K9.confirmDelete()) {
+        if (K9.confirmDelete() || (K9.confirmDeleteStarred() && mMessage.isSet(Flag.FLAGGED))) {
             showDialog(R.id.dialog_confirm_delete);
         } else {
             delete();
@@ -871,8 +823,25 @@ public class MessageView extends K9Activity implements OnClickListener {
         }
     }
 
+    /**
+     * Handle a right-to-left swipe as "move to next message."
+     */
     @Override
+    protected void onSwipeRightToLeft(MotionEvent e1, MotionEvent e2) {
+        onNext();
+    }
+
+    /**
+     * Handle a left-to-right swipe as "move to previous message."
+     */
+    @Override
+    protected void onSwipeLeftToRight(MotionEvent e1, MotionEvent e2) {
+        onPrevious();
+    }
+
     protected void onNext() {
+        // Reset scroll percentage when we change messages
+        mTopView.setScrollPercentage(0);
         if (mNextMessage == null) {
             Toast.makeText(this, getString(R.string.end_of_folder), Toast.LENGTH_SHORT).show();
             return;
@@ -886,8 +855,9 @@ public class MessageView extends K9Activity implements OnClickListener {
         mNext.requestFocus();
     }
 
-    @Override
     protected void onPrevious() {
+        // Reset scroll percentage when we change messages
+        mTopView.setScrollPercentage(0);
         if (mPreviousMessage == null) {
             Toast.makeText(this, getString(R.string.end_of_folder), Toast.LENGTH_SHORT).show();
             return;
@@ -1019,7 +989,7 @@ public class MessageView extends K9Activity implements OnClickListener {
             });
             break;
         case R.id.select_text:
-            mToggleScrollView.setScrolling(false);
+            mTopView.setScrolling(false);
             mMessageView.beginSelectingText();
             break;
         default:
@@ -1115,8 +1085,8 @@ public class MessageView extends K9Activity implements OnClickListener {
                 mTopView.scrollTo(0, 0);
                 try {
                     if (MessageView.this.mMessage != null
-                            && MessageView.this.mMessage.isSet(Flag.X_DOWNLOADED_PARTIAL)
-                    && message.isSet(Flag.X_DOWNLOADED_FULL)) {
+                        && MessageView.this.mMessage.isSet(Flag.X_DOWNLOADED_PARTIAL)
+                        && message.isSet(Flag.X_DOWNLOADED_FULL)) {
                         mMessageView.setHeaders(message, account);
                     }
                     MessageView.this.mMessage = message;
@@ -1276,5 +1246,4 @@ public class MessageView extends K9Activity implements OnClickListener {
         // sometimes shows the original encrypted content
         mMessageView.loadBodyFromText(mAccount.getCryptoProvider(), mPgpData, mMessage, mPgpData.getDecryptedData(), "text/plain");
     }
-
 }
