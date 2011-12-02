@@ -1402,16 +1402,10 @@ public class EasStore extends Store {
 							
 							synchronized (mFolderList) {
     							for (String folderName : folderNames) {
-    							    EasFolder eas = mFolderList.get(folderName);
-    							    if (eas == null) {
-                                                                Log.d(K9.LOG_TAG, "Not found the EAS folder " + folderName);
-    							    }
-    							    else {
         							s.start(Tags.PING_FOLDER)
-        								.data(Tags.PING_ID, eas.mServerId)
+        								.data(Tags.PING_ID, mFolderList.get(folderName).mServerId)
         								.data(Tags.PING_CLASS, "Email")
         							.end();
-    							    }
     							}
 							}
 							
