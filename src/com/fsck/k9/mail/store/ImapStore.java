@@ -223,7 +223,7 @@ public class ImapStore extends Store {
         }
 
         return new ImapStoreSettings(host, port, connectionSecurity, authenticationType, username,
-                password, pathPrefix);
+                                     password, pathPrefix);
     }
 
     /**
@@ -243,30 +243,29 @@ public class ImapStore extends Store {
         try {
             userEnc = URLEncoder.encode(server.username, "UTF-8");
             passwordEnc = (server.password != null) ?
-                    URLEncoder.encode(server.password, "UTF-8") : "";
-        }
-        catch (UnsupportedEncodingException e) {
+                          URLEncoder.encode(server.password, "UTF-8") : "";
+        } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException("Could not encode username or password", e);
         }
 
         String scheme;
         switch (server.connectionSecurity) {
-            case SSL_TLS_OPTIONAL:
-                scheme = "imap+ssl";
-                break;
-            case SSL_TLS_REQUIRED:
-                scheme = "imap+ssl+";
-                break;
-            case STARTTLS_OPTIONAL:
-                scheme = "imap+tls";
-                break;
-            case STARTTLS_REQUIRED:
-                scheme = "imap+tls+";
-                break;
-            default:
-            case NONE:
-                scheme = "imap";
-                break;
+        case SSL_TLS_OPTIONAL:
+            scheme = "imap+ssl";
+            break;
+        case SSL_TLS_REQUIRED:
+            scheme = "imap+ssl+";
+            break;
+        case STARTTLS_OPTIONAL:
+            scheme = "imap+tls";
+            break;
+        case STARTTLS_REQUIRED:
+            scheme = "imap+tls+";
+            break;
+        default:
+        case NONE:
+            scheme = "imap";
+            break;
         }
 
         AuthType authType;
@@ -274,16 +273,16 @@ public class ImapStore extends Store {
             authType = AuthType.valueOf(server.authenticationType);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid authentication type: " +
-                    server.authenticationType);
+                                               server.authenticationType);
         }
 
         String userInfo = authType.toString() + ":" + userEnc + ":" + passwordEnc;
         try {
             Map<String, String> extra = server.getExtra();
-            String prefix = (extra != null) ? extra.get(ImapStoreSettings.PATH_PREFIX_KEY) : null;
+            String path = (extra != null) ? "/" + extra.get(ImapStoreSettings.PATH_PREFIX_KEY) : null;
             return new URI(scheme, userInfo, server.host, server.port,
-                prefix,
-                null, null).toString();
+                           path,
+                           null, null).toString();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Can't create ImapStore URI", e);
         }
@@ -300,9 +299,9 @@ public class ImapStore extends Store {
         public final String pathPrefix;
 
         protected ImapStoreSettings(String host, int port, ConnectionSecurity connectionSecurity,
-                String authenticationType, String username, String password, String pathPrefix) {
+                                    String authenticationType, String username, String password, String pathPrefix) {
             super(STORE_TYPE, host, port, connectionSecurity, authenticationType, username,
-                    password);
+                  password);
             this.pathPrefix = pathPrefix;
         }
 
@@ -316,7 +315,7 @@ public class ImapStore extends Store {
         @Override
         public ServerSettings newPassword(String newPassword) {
             return new ImapStoreSettings(host, port, connectionSecurity, authenticationType,
-                    username, newPassword, pathPrefix);
+                                         username, newPassword, pathPrefix);
         }
     }
 
@@ -502,10 +501,10 @@ public class ImapStore extends Store {
                 HashSet<String> subscribedFolderNames = new HashSet<String>();
                 List <? extends Folder > subscribedFolders = listFolders(connection, true);
                 for (Folder subscribedFolder : subscribedFolders) {
-                    subscribedFolderNames.add(subscribedFolder.getName());
+                    subscribedFolderNames.add(subscribedFolder.getRemoteName());
                 }
                 for (Folder folder : allFolders) {
-                    if (subscribedFolderNames.contains(folder.getName())) {
+                    if (subscribedFolderNames.contains(folder.getRemoteName())) {
                         resultFolders.add(folder);
                     }
                 }
@@ -613,7 +612,7 @@ public class ImapStore extends Store {
         if (connection.capabilities.contains("XLIST")) {
             if (K9.DEBUG) Log.d(K9.LOG_TAG, "Folder auto-configuration: Using XLIST.");
             commandResponse = "XLIST";
-        } else if(connection.capabilities.contains("SPECIAL-USE")) {
+        } else if (connection.capabilities.contains("SPECIAL-USE")) {
             if (K9.DEBUG) Log.d(K9.LOG_TAG, "Folder auto-configuration: Using RFC6154/SPECIAL-USE.");
             commandResponse = "LIST";
             commandOptions = " (SPECIAL-USE)";
@@ -624,7 +623,7 @@ public class ImapStore extends Store {
 
         final List<ImapResponse> responses =
             connection.executeSimpleCommand(String.format("%s%s \"\" %s", commandResponse, commandOptions,
-                encodeString(getCombinedPrefix() + "*")));
+                                            encodeString(getCombinedPrefix() + "*")));
 
         for (ImapResponse response : responses) {
             if (ImapResponseParser.equalsIgnoreCase(response.get(0), commandResponse)) {
@@ -634,7 +633,7 @@ public class ImapStore extends Store {
                     decodedFolderName = decodeFolderName(response.getString(3));
                 } catch (CharacterCodingException e) {
                     Log.w(K9.LOG_TAG, "Folder name not correctly encoded with the UTF-7 variant " +
-                        "as defined by RFC 3501: " + response.getString(3), e);
+                          "as defined by RFC 3501: " + response.getString(3), e);
                     // We currently just skip folders with malformed names.
                     continue;
                 }
@@ -909,7 +908,6 @@ public class ImapStore extends Store {
                 Log.e(K9.LOG_TAG, "Unable to open connection for " + getLogId(), me);
                 throw me;
             }
-
         }
 
         @Override
@@ -935,6 +933,11 @@ public class ImapStore extends Store {
                 releaseConnection(mConnection);
                 mConnection = null;
             }
+        }
+
+        @Override
+        public String getRemoteName() {
+            return mName;
         }
 
         @Override
@@ -1084,7 +1087,7 @@ public class ImapStore extends Store {
             if (messages.length == 0)
                 return;
 
-            if (trashFolderName == null || getName().equalsIgnoreCase(trashFolderName)) {
+            if (trashFolderName == null || getRemoteName().equalsIgnoreCase(trashFolderName)) {
                 setFlags(messages, new Flag[] { Flag.DELETED }, true);
             } else {
                 ImapFolder remoteTrashFolder = (ImapFolder)getStore().getFolder(trashFolderName);
@@ -1753,8 +1756,8 @@ public class ImapStore extends Store {
                      */
                     for (int i = 0, count = bodyParams.size(); i < count; i += 2) {
                         contentType.append(String.format(";\n %s=\"%s\"",
-                                           bodyParams.getString(i),
-                                           bodyParams.getString(i + 1)));
+                                                         bodyParams.getString(i),
+                                                         bodyParams.getString(i + 1)));
                     }
                 }
 
@@ -1788,8 +1791,8 @@ public class ImapStore extends Store {
                          */
                         for (int i = 0, count = bodyDispositionParams.size(); i < count; i += 2) {
                             contentDisposition.append(String.format(";\n %s=\"%s\"",
-                                                      bodyDispositionParams.getString(i).toLowerCase(Locale.US),
-                                                      bodyDispositionParams.getString(i + 1)));
+                                                                    bodyDispositionParams.getString(i).toLowerCase(Locale.US),
+                                                                    bodyDispositionParams.getString(i + 1)));
                         }
                     }
                 }
@@ -1999,14 +2002,14 @@ public class ImapStore extends Store {
         @Override
         public boolean equals(Object o) {
             if (o instanceof ImapFolder) {
-                return ((ImapFolder)o).getName().equalsIgnoreCase(getName());
+                return ((ImapFolder)o).getRemoteName().equalsIgnoreCase(getRemoteName());
             }
             return super.equals(o);
         }
 
         @Override
         public int hashCode() {
-            return getName().hashCode();
+            return getRemoteName().hashCode();
         }
 
         protected ImapStore getStore() {
@@ -2014,7 +2017,7 @@ public class ImapStore extends Store {
         }
 
         protected String getLogId() {
-            String id = getAccount().getDescription() + ":" + getName() + "/" + Thread.currentThread().getName();
+            String id = getAccount().getDescription() + ":" + getRemoteName() + "/" + Thread.currentThread().getName();
             if (mConnection != null) {
                 id += "/" + mConnection.getLogId();
             }
@@ -2603,7 +2606,7 @@ public class ImapStore extends Store {
             super(store, name);
             receiver = nReceiver;
             TracingPowerManager pm = TracingPowerManager.getPowerManager(receiver.getContext());
-            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ImapFolderPusher " + store.getAccount().getDescription() + ":" + getName());
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ImapFolderPusher " + store.getAccount().getDescription() + ":" + getRemoteName());
             wakeLock.setReferenceCounted(false);
 
         }
@@ -2644,7 +2647,7 @@ public class ImapStore extends Store {
                         try {
                             int oldUidNext = -1;
                             try {
-                                String pushStateS = receiver.getPushState(getName());
+                                String pushStateS = receiver.getPushState(getRemoteName());
                                 ImapPushState pushState = ImapPushState.parse(pushStateS);
                                 oldUidNext = pushState.uidNext;
                                 if (K9.DEBUG)
@@ -2729,7 +2732,7 @@ public class ImapStore extends Store {
                                 if (K9.DEBUG)
                                     Log.i(K9.LOG_TAG, "About to IDLE for " + getLogId());
 
-                                receiver.setPushActive(getName(), true);
+                                receiver.setPushActive(getRemoteName(), true);
                                 idling.set(true);
                                 doneSent.set(false);
 
@@ -2743,7 +2746,7 @@ public class ImapStore extends Store {
                             wakeLock.acquire(K9.PUSH_WAKE_LOCK_TIMEOUT);
                             storedUntaggedResponses.clear();
                             idling.set(false);
-                            receiver.setPushActive(getName(), false);
+                            receiver.setPushActive(getRemoteName(), false);
                             try {
                                 close();
                             } catch (Exception me) {
@@ -2770,7 +2773,7 @@ public class ImapStore extends Store {
                             }
                         }
                     }
-                    receiver.setPushActive(getName(), false);
+                    receiver.setPushActive(getRemoteName(), false);
                     try {
                         if (K9.DEBUG)
                             Log.i(K9.LOG_TAG, "Pusher for " + getLogId() + " is exiting");
@@ -2836,7 +2839,7 @@ public class ImapStore extends Store {
         private void syncMessages(int end, boolean newArrivals) throws MessagingException {
             int oldUidNext = -1;
             try {
-                String pushStateS = receiver.getPushState(getName());
+                String pushStateS = receiver.getPushState(getRemoteName());
                 ImapPushState pushState = ImapPushState.parse(pushStateS);
                 oldUidNext = pushState.uidNext;
                 if (K9.DEBUG)

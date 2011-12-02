@@ -516,8 +516,8 @@ public class MessageList
         private void setWindowTitle() {
             String displayName;
 
-            if (mFolderName != null) {
-                displayName  = mFolderName;
+            if (mCurrentFolder != null) {
+                displayName  = mCurrentFolder.folder.getName();
 
                 if (mAccount.getInboxFolderName().equalsIgnoreCase(displayName)) {
                     displayName = getString(R.string.special_mailbox_name_inbox);
@@ -525,11 +525,14 @@ public class MessageList
                     displayName = getString(R.string.special_mailbox_name_outbox);
                 }
 
-                String dispString = mAdapter.mListener.formatHeader(MessageList.this, getString(R.string.message_list_title, mAccount.getDescription(), displayName), mUnreadMessageCount, getTimeFormat());
+                String dispString = mAdapter.mListener.formatHeader(MessageList.this,
+                                    getString(R.string.message_list_title, mAccount.getDescription(), displayName),
+                                    mUnreadMessageCount, getTimeFormat());
                 setTitle(dispString);
             } else if (mQueryString != null) {
                 if (mTitle != null) {
-                    String dispString = mAdapter.mListener.formatHeader(MessageList.this, mTitle, mUnreadMessageCount, getTimeFormat());
+                    String dispString = mAdapter.mListener.formatHeader(MessageList.this, mTitle,
+                                        mUnreadMessageCount, getTimeFormat());
                     setTitle(dispString);
                 } else {
                     setTitle(getString(R.string.search_results) + ": " + mQueryString);
@@ -654,7 +657,7 @@ public class MessageList
         if (account != null && account.equals(mAccount) &&
                 folderName != null && folderName.equals(mFolderName) &&
                 ((queryString != null && queryString.equals(mQueryString)) ||
-                        (queryString == null && mQueryString == null))) {
+                 (queryString == null && mQueryString == null))) {
             // We're likely just returning from the MessageView activity with "Manage back button"
             // enabled. So just leave the activity in the state it was left in.
             return;
@@ -1342,13 +1345,13 @@ public class MessageList
     }
 
     private void onToggleRead(MessageInfoHolder holder) {
-        mController.setFlag(holder.message.getFolder().getAccount(), holder.message.getFolder().getName(), new String[] { holder.uid }, Flag.SEEN, !holder.read);
+        mController.setFlag(holder.message.getFolder().getAccount(), holder.message.getFolder().getRemoteName(), new String[] { holder.uid }, Flag.SEEN, !holder.read);
         holder.read = !holder.read;
         mHandler.sortMessages();
     }
 
     private void onToggleFlag(MessageInfoHolder holder) {
-        mController.setFlag(holder.message.getFolder().getAccount(), holder.message.getFolder().getName(), new String[] { holder.uid }, Flag.FLAGGED, !holder.flagged);
+        mController.setFlag(holder.message.getFolder().getAccount(), holder.message.getFolder().getRemoteName(), new String[] { holder.uid }, Flag.FLAGGED, !holder.flagged);
         holder.flagged = !holder.flagged;
         mHandler.sortMessages();
     }
@@ -2815,14 +2818,14 @@ public class MessageList
             final Message message = holder.message;
             if (first) {
                 first = false;
-                folderName = message.getFolder().getName();
+                folderName = message.getFolder().getRemoteName();
                 account = message.getFolder().getAccount();
                 if ((operation == FolderOperation.MOVE && !mController.isMoveCapable(account)) || (operation == FolderOperation.COPY && !mController.isCopyCapable(account))) {
                     // account is not copy/move capable
                     return;
                 }
             } else if (!account.equals(message.getFolder().getAccount())
-                       || !folderName.equals(message.getFolder().getName())) {
+                       || !folderName.equals(message.getFolder().getRemoteName())) {
                 // make sure all messages come from the same account/folder?
                 return;
             }
