@@ -92,7 +92,9 @@ public class MessageView extends K9Activity implements OnClickListener {
         }
 
         @Override
-        public void onMount(String providerId) { /* no-op */ }
+        public void onMount(String providerId) {
+            /* no-op */
+        }
     }
 
 
@@ -248,7 +250,7 @@ public class MessageView extends K9Activity implements OnClickListener {
     @Override
     public void onBackPressed() {
         if (K9.manageBack()) {
-            String folder = (mMessage != null) ? mMessage.getFolder().getName() : null;
+            String folder = (mMessage != null) ? mMessage.getFolder().getRemoteName() : null;
             MessageList.actionHandleFolder(this, mAccount, folder);
             finish();
         } else {
@@ -308,7 +310,7 @@ public class MessageView extends K9Activity implements OnClickListener {
     }
 
     public static void actionView(Context context, MessageReference messRef,
-            ArrayList<MessageReference> messReferences) {
+                                  ArrayList<MessageReference> messReferences) {
         Intent i = new Intent(context, MessageView.class);
         i.putExtra(EXTRA_MESSAGE_REFERENCE, messRef);
         i.putParcelableArrayListExtra(EXTRA_MESSAGE_REFERENCES, messReferences);
@@ -724,7 +726,7 @@ public class MessageView extends K9Activity implements OnClickListener {
     private void onFlag() {
         if (mMessage != null) {
             mController.setFlag(mAccount,
-                                mMessage.getFolder().getName(), new String[] {mMessage.getUid()}, Flag.FLAGGED, !mMessage.isSet(Flag.FLAGGED));
+                                mMessage.getFolder().getRemoteName(), new String[] {mMessage.getUid()}, Flag.FLAGGED, !mMessage.isSet(Flag.FLAGGED));
             try {
                 mMessage.setFlag(Flag.FLAGGED, !mMessage.isSet(Flag.FLAGGED));
                 mMessageView.setHeaders(mMessage, mAccount);
@@ -1085,8 +1087,8 @@ public class MessageView extends K9Activity implements OnClickListener {
                 mTopView.scrollTo(0, 0);
                 try {
                     if (MessageView.this.mMessage != null
-                        && MessageView.this.mMessage.isSet(Flag.X_DOWNLOADED_PARTIAL)
-                        && message.isSet(Flag.X_DOWNLOADED_FULL)) {
+                            && MessageView.this.mMessage.isSet(Flag.X_DOWNLOADED_PARTIAL)
+                    && message.isSet(Flag.X_DOWNLOADED_FULL)) {
                         mMessageView.setHeaders(message, account);
                     }
                     MessageView.this.mMessage = message;

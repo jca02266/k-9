@@ -61,6 +61,7 @@ import com.fsck.k9.mail.Pusher;
 import com.fsck.k9.mail.Store;
 import com.fsck.k9.mail.filter.EOLConvertingOutputStream;
 import com.fsck.k9.mail.internet.MimeMessage;
+import com.fsck.k9.mail.store.LocalStore.LocalFolder;
 import com.fsck.k9.mail.store.exchange.Eas;
 import com.fsck.k9.mail.store.exchange.adapter.EasEmailSyncParser;
 import com.fsck.k9.mail.store.exchange.adapter.FolderSyncParser;
@@ -82,19 +83,21 @@ public class EasStore extends Store {
 
     private static final Message[] EMPTY_MESSAGE_ARRAY = new Message[0];
 
+    private static final String INITIAL_SYNC_KEY = "0";
+
     static private final String PING_COMMAND = "Ping";
     // Command timeout is the the time allowed for reading data from an open connection before an
     // IOException is thrown.  After a small added allowance, our watchdog alarm goes off (allowing
     // us to detect a silently dropped connection).  The allowance is defined below.
-    static private final int COMMAND_TIMEOUT = 30*1000;
+    static private final int COMMAND_TIMEOUT = 30 * 1000;
     // Connection timeout is the time given to connect to the server before reporting an IOException
-    static private final int CONNECTION_TIMEOUT = 20*1000;
+    static private final int CONNECTION_TIMEOUT = 20 * 1000;
 
     // This needs to be long enough to send the longest reasonable message, without being so long
     // as to effectively "hang" sending of mail.  The standard 30 second timeout isn't long enough
     // for pictures and the like.  For now, we'll use 15 minutes, in the knowledge that any socket
     // failure would probably generate an Exception before timing out anyway
-    public static final int SEND_MAIL_TIMEOUT = 15*60*1000;
+    public static final int SEND_MAIL_TIMEOUT = 15 * 60 * 1000;
 
     // MSFT's custom HTTP result code indicating the need to provision
     static private final int HTTP_NEED_PROVISIONING = 449;
@@ -106,7 +109,7 @@ public class EasStore extends Store {
 
     static public final String EAS_12_POLICY_TYPE = "MS-EAS-Provisioning-WBXML";
     static public final String EAS_2_POLICY_TYPE = "MS-WAP-Provisioning-XML";
-    
+
     private static final int IDLE_READ_TIMEOUT_INCREMENT = 5 * 60 * 1000;
     private static final int IDLE_FAILURE_COUNT_LIMIT = 10;
     private static final int MAX_DELAY_TIME = 5 * 60 * 1000; // 5 minutes
@@ -131,10 +134,7 @@ public class EasStore extends Store {
 
     private HashMap<String, EasFolder> mFolderList = new HashMap<String, EasFolder>();
 
-    private String mStoreSyncKey = "0";
-    private String mStoreSecuritySyncKey = "0";
-
-	/**
+    /**
      * eas://user:password@server:port CONNECTION_SECURITY_NONE
      * eas+tls://user:password@server:port CONNECTION_SECURITY_TLS_OPTIONAL
      * eas+tls+://user:password@server:port CONNECTION_SECURITY_TLS_REQUIRED
@@ -187,45 +187,53 @@ public class EasStore extends Store {
                 Log.e(K9.LOG_TAG, "Couldn't urldecode username or password.", enc);
             }
         }
-        
+
         mSecure = mConnectionSecurity == CONNECTION_SECURITY_SSL_REQUIRED;
-        
+
         setupHttpClient();
     }
-    
-	public String getStoreSyncKey() {
-		return mStoreSyncKey;
-	}
 
-	public void setStoreSyncKey(String mStoreSyncKey) {
-		this.mStoreSyncKey = mStoreSyncKey;
-	}
+    public String getStoreSyncKey() {
+        String key = mAccount.getSyncKey();
+
+        // Set the default sync key if it has not yet been set.
+        if (TextUtils.isEmpty(key)) {
+            key = INITIAL_SYNC_KEY;
+            mAccount.setSyncKey(key);
+        }
+
+        return key;
+    }
+
+    public void setStoreSyncKey(String syncKey) {
+        mAccount.setSyncKey(syncKey);
+    }
 
     @Override
     public void checkSettings() throws MessagingException {
         boolean ssl = true;
-        
-		boolean trustCertificates = true;
-		
-		validateAccount(
-        		mHost,
-        		mUsername,
-        		mPassword,
-        		mUri.getPort(),
-        		ssl,
-        		trustCertificates,
-        		K9.app);
+
+        boolean trustCertificates = true;
+
+        validateAccount(
+            mHost,
+            mUsername,
+            mPassword,
+            mUri.getPort(),
+            ssl,
+            trustCertificates,
+            K9.app);
     }
-    
+
     public void validateAccount(String hostAddress, String userName, String password, int port,
-            boolean ssl, boolean trustCertificates, Context context) throws MessagingException {
+                                boolean ssl, boolean trustCertificates, Context context) throws MessagingException {
         try {
-        	Log.i(K9.LOG_TAG, "Testing EAS: " + hostAddress + ", " + userName + ", ssl = " + (ssl ? "1" : "0"));
-            
-//        	Account account = Preferences.getPreferences(context).newAccount();
+            Log.i(K9.LOG_TAG, "Testing EAS: " + hostAddress + ", " + userName + ", ssl = " + (ssl ? "1" : "0"));
+
+//          Account account = Preferences.getPreferences(context).newAccount();
 //            account.setName("%TestAccount%");
 //            account.setStoreUri(mUri.toString());
-			EasStore svc = new EasStore(mAccount);
+            EasStore svc = new EasStore(mAccount);
             svc.mHost = hostAddress;
             svc.mUsername = userName;
             svc.mPassword = password;
@@ -243,7 +251,7 @@ public class EasStore extends Store {
                 Header commands = resp.getFirstHeader("MS-ASProtocolCommands");
                 Header versions = resp.getFirstHeader("ms-asprotocolversions");
                 if (commands == null || versions == null) {
-                	Log.e(K9.LOG_TAG, "OPTIONS response without commands or versions; reporting I/O error");
+                    Log.e(K9.LOG_TAG, "OPTIONS response without commands or versions; reporting I/O error");
                     throw new MessagingException("MessagingException.IOERROR");
                 }
 
@@ -253,59 +261,59 @@ public class EasStore extends Store {
                 // Run second test here for provisioning failures...
                 Serializer s = new Serializer();
                 Log.e(K9.LOG_TAG, "Validate: try folder sync");
-                s.start(Tags.FOLDER_FOLDER_SYNC).start(Tags.FOLDER_SYNC_KEY).text("0")
-                    .end().end().done();
+                s.start(Tags.FOLDER_FOLDER_SYNC).start(Tags.FOLDER_SYNC_KEY).text(INITIAL_SYNC_KEY)
+                .end().end().done();
                 resp = svc.sendHttpClientPost("FolderSync", s.toByteArray());
                 reclaimConnection(resp);
                 code = resp.getStatusLine().getStatusCode();
                 // We'll get one of the following responses if policies are required by the server
                 if (code == HttpStatus.SC_FORBIDDEN || code == HTTP_NEED_PROVISIONING) {
                     // Get the policies and see if we are able to support them
-                	Log.e(K9.LOG_TAG, "Validate: provisioning required");
+                    Log.e(K9.LOG_TAG, "Validate: provisioning required");
                     if (svc.canProvision() != null) {
                         // If so, send the advisory Exception (the account may be created later)
-                    	Log.e(K9.LOG_TAG, "Validate: provisioning is possible");
+                        Log.e(K9.LOG_TAG, "Validate: provisioning is possible");
                         //throw new MessagingException("MessagingException.SECURITY_POLICIES_REQUIRED");
-                    	return;
+                        return;
                     } else
-                    	Log.e(K9.LOG_TAG, "Validate: provisioning not possible");
-                        // If not, send the unsupported Exception (the account won't be created)
-                        throw new MessagingException(
-                                "MessagingException.SECURITY_POLICIES_UNSUPPORTED");
+                        Log.e(K9.LOG_TAG, "Validate: provisioning not possible");
+                    // If not, send the unsupported Exception (the account won't be created)
+                    throw new MessagingException(
+                        "MessagingException.SECURITY_POLICIES_UNSUPPORTED");
                 } else if (code == HttpStatus.SC_NOT_FOUND) {
-                	Log.e(K9.LOG_TAG, "Wrong address or bad protocol version");
+                    Log.e(K9.LOG_TAG, "Wrong address or bad protocol version");
                     // We get a 404 from OWA addresses (which are NOT EAS addresses)
                     throw new MessagingException("MessagingException.PROTOCOL_VERSION_UNSUPPORTED");
                 } else if (code != HttpStatus.SC_OK) {
                     // Fail generically with anything other than success
-                	Log.e(K9.LOG_TAG, "Unexpected response for FolderSync: " + code);
+                    Log.e(K9.LOG_TAG, "Unexpected response for FolderSync: " + code);
                     throw new MessagingException("MessagingException.UNSPECIFIED_EXCEPTION");
                 }
                 Log.e(K9.LOG_TAG, "Validation successful");
                 return;
             }
             if (isAuthError(code)) {
-            	Log.e(K9.LOG_TAG, "Authentication failed");
+                Log.e(K9.LOG_TAG, "Authentication failed");
                 throw new AuthenticationFailedException("Validation failed");
             } else {
                 // TODO Need to catch other kinds of errors (e.g. policy) For now, report the code.
-            	Log.e(K9.LOG_TAG, "Validation failed, reporting I/O error: " + code);
+                Log.e(K9.LOG_TAG, "Validation failed, reporting I/O error: " + code);
                 throw new MessagingException("MessagingException.IOERROR");
             }
         } catch (IOException e) {
             Throwable cause = e.getCause();
             if (cause != null && cause instanceof CertificateException) {
-            	Log.e(K9.LOG_TAG, "CertificateException caught: ", e);
+                Log.e(K9.LOG_TAG, "CertificateException caught: ", e);
                 throw new MessagingException("MessagingException.GENERAL_SECURITY");
             }
             Log.e(K9.LOG_TAG, "IOException caught: ", e);
             throw new MessagingException("MessagingException.IOERROR");
         }
     }
-    
+
     private String getPolicyType() {
         return (mProtocolVersionDouble >=
-            Eas.SUPPORTED_PROTOCOL_EX2007_DOUBLE) ? EAS_12_POLICY_TYPE : EAS_2_POLICY_TYPE;
+                Eas.SUPPORTED_PROTOCOL_EX2007_DOUBLE) ? EAS_12_POLICY_TYPE : EAS_2_POLICY_TYPE;
     }
 
     /**
@@ -319,7 +327,7 @@ public class EasStore extends Store {
         Serializer s = new Serializer();
         s.start(Tags.PROVISION_PROVISION).start(Tags.PROVISION_POLICIES);
         s.start(Tags.PROVISION_POLICY).data(Tags.PROVISION_POLICY_TYPE, getPolicyType())
-            .end().end().end().done();
+        .end().end().end().done();
         HttpResponse resp = sendHttpClientPost("Provision", s.toByteArray());
         try {
             int code = resp.getStatusLine().getStatusCode();
@@ -338,7 +346,7 @@ public class EasStore extends Store {
                         // accommodate the required policies).  The server will agree to this if the
                         // "allow non-provisionable devices" setting is enabled on the server
                         String policyKey = acknowledgeProvision(pp.getPolicyKey(),
-                                PROVISION_STATUS_PARTIAL);
+                                                                PROVISION_STATUS_PARTIAL);
                         // Return either the parser (success) or null (failure)
                         return (policyKey != null) ? pp : null;
                     }
@@ -350,13 +358,13 @@ public class EasStore extends Store {
         // On failures, simply return null
         return null;
     }
-    
+
     private String acknowledgeProvision(String tempKey, String result) throws IOException, MessagingException {
         return acknowledgeProvisionImpl(tempKey, result, false);
     }
 
     private String acknowledgeProvisionImpl(String tempKey, String status,
-            boolean remoteWipe) throws IOException, MessagingException {
+                                            boolean remoteWipe) throws IOException, MessagingException {
         Serializer s = new Serializer();
         s.start(Tags.PROVISION_PROVISION).start(Tags.PROVISION_POLICIES);
         s.start(Tags.PROVISION_POLICY);
@@ -408,32 +416,32 @@ public class EasStore extends Store {
     protected boolean isProvisionError(int code) {
         return (code == HTTP_NEED_PROVISIONING) || (code == HttpStatus.SC_FORBIDDEN);
     }
-    
+
     private void setupProtocolVersion(EasStore service, Header versionHeader)
-		    throws MessagingException {
-		// The string is a comma separated list of EAS versions in ascending order
-		// e.g. 1.0,2.0,2.5,12.0,12.1
-		String supportedVersions = versionHeader.getValue();
-		Log.i(K9.LOG_TAG, "Server supports versions: " + supportedVersions);
-		String[] supportedVersionsArray = supportedVersions.split(",");
-		String ourVersion = null;
-		// Find the most recent version we support
-		for (String version: supportedVersionsArray) {
-		    if (version.equals(Eas.SUPPORTED_PROTOCOL_EX2003) ||
-		            version.equals(Eas.SUPPORTED_PROTOCOL_EX2007)) {
-		        ourVersion = version;
-		    }
-		}
-		// If we don't support any of the servers supported versions, throw an exception here
-		// This will cause validation to fail
-		if (ourVersion == null) {
-		    Log.w(K9.LOG_TAG, "No supported EAS versions: " + supportedVersions);
-		    throw new MessagingException("MessagingException.PROTOCOL_VERSION_UNSUPPORTED");
-		} else {
-		    service.mProtocolVersion = ourVersion;
-		    service.mProtocolVersionDouble = Double.parseDouble(ourVersion);
-		}
-	}
+    throws MessagingException {
+        // The string is a comma separated list of EAS versions in ascending order
+        // e.g. 1.0,2.0,2.5,12.0,12.1
+        String supportedVersions = versionHeader.getValue();
+        Log.i(K9.LOG_TAG, "Server supports versions: " + supportedVersions);
+        String[] supportedVersionsArray = supportedVersions.split(",");
+        String ourVersion = null;
+        // Find the most recent version we support
+        for (String version: supportedVersionsArray) {
+            if (version.equals(Eas.SUPPORTED_PROTOCOL_EX2003) ||
+                    version.equals(Eas.SUPPORTED_PROTOCOL_EX2007)) {
+                ourVersion = version;
+            }
+        }
+        // If we don't support any of the servers supported versions, throw an exception here
+        // This will cause validation to fail
+        if (ourVersion == null) {
+            Log.w(K9.LOG_TAG, "No supported EAS versions: " + supportedVersions);
+            throw new MessagingException("MessagingException.PROTOCOL_VERSION_UNSUPPORTED");
+        } else {
+            service.mProtocolVersion = ourVersion;
+            service.mProtocolVersionDouble = Double.parseDouble(ourVersion);
+        }
+    }
 
     protected HttpResponse sendHttpClientPost(String cmd, byte[] bytes) throws IOException, MessagingException {
         return sendHttpClientPost(cmd, new ByteArrayEntity(bytes), COMMAND_TIMEOUT);
@@ -447,7 +455,7 @@ public class EasStore extends Store {
      * Convenience method for executePostWithTimeout for use other than with the Ping command
      */
     protected HttpResponse executePostWithTimeout(HttpClient client, HttpPost method, int timeout)
-            throws IOException {
+    throws IOException {
         return executePostWithTimeout(client, method, timeout, false);
     }
 
@@ -473,7 +481,7 @@ public class EasStore extends Store {
 //            }
 //        }
 //        try {
-            return client.execute(method);
+        return client.execute(method);
 //        } finally {
 //            synchronized(getSynchronizer()) {
 //                if (isPingCommand) {
@@ -487,47 +495,47 @@ public class EasStore extends Store {
     }
 
     protected HttpResponse sendHttpClientPost(String cmd, HttpEntity entity, int timeout)
-		    throws IOException, MessagingException {		
-		boolean isPingCommand = cmd.equals(PING_COMMAND);
-		
-		// Split the mail sending commands
-		String extra = null;
-		boolean msg = false;
-		if (cmd.startsWith("SmartForward&") || cmd.startsWith("SmartReply&")) {
-		    int cmdLength = cmd.indexOf('&');
-		    extra = cmd.substring(cmdLength);
-		    cmd = cmd.substring(0, cmdLength);
-		    msg = true;
-		} else if (cmd.startsWith("SendMail&")) {
-		    msg = true;
-		}
-		
-		String us = makeUriString(cmd, extra);
-		HttpPost method = new HttpPost(URI.create(us));
-		// Send the proper Content-Type header
-		// If entity is null (e.g. for attachments), don't set this header
-		if (msg) {
-		    method.setHeader("Content-Type", "message/rfc822");
-		} else if (entity != null) {
-		    method.setHeader("Content-Type", "application/vnd.ms-sync.wbxml");
-		}
-		setHeaders(method, !cmd.equals(PING_COMMAND));
-		method.setEntity(entity);
-		
-		return executePostWithTimeout(mHttpClient, method, timeout, isPingCommand);
-	}
+    throws IOException, MessagingException {
+        boolean isPingCommand = cmd.equals(PING_COMMAND);
+
+        // Split the mail sending commands
+        String extra = null;
+        boolean msg = false;
+        if (cmd.startsWith("SmartForward&") || cmd.startsWith("SmartReply&")) {
+            int cmdLength = cmd.indexOf('&');
+            extra = cmd.substring(cmdLength);
+            cmd = cmd.substring(0, cmdLength);
+            msg = true;
+        } else if (cmd.startsWith("SendMail&")) {
+            msg = true;
+        }
+
+        String us = makeUriString(cmd, extra);
+        HttpPost method = new HttpPost(URI.create(us));
+        // Send the proper Content-Type header
+        // If entity is null (e.g. for attachments), don't set this header
+        if (msg) {
+            method.setHeader("Content-Type", "message/rfc822");
+        } else if (entity != null) {
+            method.setHeader("Content-Type", "application/vnd.ms-sync.wbxml");
+        }
+        setHeaders(method, !cmd.equals(PING_COMMAND));
+        method.setEntity(entity);
+
+        return executePostWithTimeout(mHttpClient, method, timeout, isPingCommand);
+    }
 
     protected HttpResponse sendHttpClientOptions() throws IOException, MessagingException {
         String us = makeUriString("OPTIONS", null);
         HttpOptions method = new HttpOptions(URI.create(us));
         setHeaders(method, false);
-        
+
         HttpConnectionParams.setSoTimeout(method.getParams(), COMMAND_TIMEOUT);
-        
+
         return mHttpClient.execute(method);
     }
-    
-	/**
+
+    /**
      * Set standard HTTP headers, using a policy key if required
      * @param method the method we are going to send
      * @param usePolicyKey whether or not a policy key should be sent in the headers
@@ -541,9 +549,9 @@ public class EasStore extends Store {
             // If there's an account in existence, use its key; otherwise (we're creating the
             // account), send "0".  The server will respond with code 449 if there are policies
             // to be enforced
-            String key = "0";
+            String key = INITIAL_SYNC_KEY;
             if (mAccount != null) {
-                String accountKey = mStoreSecuritySyncKey;
+                String accountKey = mAccount.getSecurityKey();
                 if (!TextUtils.isEmpty(accountKey)) {
                     key = accountKey;
                 }
@@ -554,21 +562,21 @@ public class EasStore extends Store {
 
     private String makeUriString(String cmd, String extra) throws IOException {
         // Cache the authentication string and the command string
-       if (mAuthString == null || mCmdString == null) {
-           cacheAuthAndCmdString();
-       }
-       boolean mSsl = true;
-       boolean mTrustSsl = false;
-       String us = (mSsl ? (mTrustSsl ? "httpts" : "https") : "http") + "://" + mHost +
-           "/Microsoft-Server-ActiveSync";
-       if (cmd != null) {
-           us += "?Cmd=" + cmd + mCmdString;
-       }
-       if (extra != null) {
-           us += extra;
-       }
-       return us;
-   }
+        if (mAuthString == null || mCmdString == null) {
+            cacheAuthAndCmdString();
+        }
+        boolean mSsl = true;
+        boolean mTrustSsl = false;
+        String us = (mSsl ? (mTrustSsl ? "httpts" : "https") : "http") + "://" + mHost +
+                    "/Microsoft-Server-ActiveSync";
+        if (cmd != null) {
+            us += "?Cmd=" + cmd + mCmdString;
+        }
+        if (extra != null) {
+            us += extra;
+        }
+        return us;
+    }
 
     /**
      * Using mUserName and mPassword, create and cache mAuthString and mCacheString, which are used
@@ -580,27 +588,35 @@ public class EasStore extends Store {
         String cs = mUsername + ':' + mPassword;
         mAuthString = "Basic " + Base64.encodeToString(cs.getBytes(), Base64.NO_WRAP);
         mCmdString = "&User=" + safeUserName + "&DeviceId=" + mDeviceId +
-            "&DeviceType=" + mDeviceType;
+                     "&DeviceType=" + mDeviceType;
     }
-    
+
     @Override
-    public List <? extends Folder> getPersonalNamespaces(boolean forceListAll) throws MessagingException {
-        synchronized (mFolderList) {
-        	if (forceListAll || mFolderList.isEmpty()) {
-        		return getInitialFolderList();
-        	} else {
-    	        return new ArrayList<EasFolder>(mFolderList.values());
-        	}
+    public List <? extends Folder > getPersonalNamespaces(boolean forceListAll) throws MessagingException {
+        if (forceListAll || getStoreSyncKey().equals(INITIAL_SYNC_KEY)) {
+            if (forceListAll) {
+                // Reset the sync key so the Exchange server will return the entire folder list
+                // rather than just changes.
+                setStoreSyncKey(INITIAL_SYNC_KEY);
+            }
+            return getInitialFolderList();
+        } else {
+            synchronized (mFolderList) {
+                if (mFolderList.isEmpty()) {
+                    syncFoldersFromLocalStore();
+                }
+                return new ArrayList<EasFolder>(mFolderList.values());
+            }
         }
     }
-    
+
     private void init() throws IOException, MessagingException {
         // Determine our protocol version, if we haven't already and save it in the Account
         // Also re-check protocol version at least once a day (in case of upgrade)
-    	boolean lastSyncTimeDayDue = false;
-    	//lastSyncTimeDayDue = ((System.currentTimeMillis() - mMailbox.mSyncTime) > DAYS);
+        boolean lastSyncTimeDayDue = false;
+        //lastSyncTimeDayDue = ((System.currentTimeMillis() - mMailbox.mSyncTime) > DAYS);
         if (mProtocolVersion == null || lastSyncTimeDayDue) {
-        	Log.d(K9.LOG_TAG, "Determine EAS protocol version");
+            Log.d(K9.LOG_TAG, "Determine EAS protocol version");
             HttpResponse resp = sendHttpClientOptions();
             reclaimConnection(resp);
             int code = resp.getStatusLine().getStatusCode();
@@ -616,90 +632,92 @@ public class EasStore extends Store {
                     // But if it does, we'll rethrow this...
                     throw new IOException();
                 }
-             } else {
+            } else {
                 Log.e(K9.LOG_TAG, "OPTIONS command failed; throwing IOException");
                 throw new IOException();
             }
         }
     }
-    
-    public List <? extends Folder > getInitialFolderList() throws MessagingException {
+
+    private List <? extends Folder > getInitialFolderList() throws MessagingException {
         LinkedList<Folder> folderList = new LinkedList<Folder>();
-        
-    	try {
-    		init();
-    		
-	        Serializer s = new Serializer();
-	        s.start(Tags.FOLDER_FOLDER_SYNC).start(Tags.FOLDER_SYNC_KEY)
-	            .text(getStoreSyncKey()).end().end().done();
-	        HttpResponse resp = sendHttpClientPost("FolderSync", s.toByteArray());
-	        try {
-    	        int code = resp.getStatusLine().getStatusCode();
-    	        if (code == HttpStatus.SC_OK) {
-    	            HttpEntity entity = resp.getEntity();
-    	            int len = (int)entity.getContentLength();
-    	            if (len != 0) {
-    	                InputStream is = entity.getContent();
-    	                // Returns true if we need to sync again
-    	                if (new FolderSyncParser(is, this, folderList)
-    	                        .parse()) {
-    	                	throw new RuntimeException();
-    	                }
-    	            }
-    	        } else if (isProvisionError(code)) {
-    	            // If the sync error is a provisioning failure (perhaps the policies changed),
-    	            // let's try the provisioning procedure
-    	            // Provisioning must only be attempted for the account mailbox - trying to
-    	            // provision any other mailbox may result in race conditions and the creation
-    	            // of multiple policy keys.
-    	            if (!tryProvision()) {
-    	                // Set the appropriate failure status
-    	                throw new RuntimeException();
-    	            } else {
-    	                // If we succeeded, try again...
-    	                return getInitialFolderList();
-    	            }
-    	        } else if (isAuthError(code)) {
-    	            throw new RuntimeException();
-    	        } else {
-    	            Log.w(K9.LOG_TAG, "FolderSync response error: " + code);
-    	            throw new RuntimeException();
-    	        }
-	        } finally {
-	            reclaimConnection(resp);
-	        }
-    	} catch (IOException e) {
-    		throw new MessagingException("io", e);
-    	}
-    	
-    	for (Folder folder : folderList) {
-    		mFolderList.put(folder.getName(), (EasFolder) folder);
-    	}
-    	
-    	for (Folder folder : folderList) {
-    		int type = ((EasFolder) folder).mType;
-    		switch (type) {
-    			case FolderSyncParser.INBOX_TYPE:
-        			String inboxFolderName = folder.getName();
-        	    	this.mAccount.setAutoExpandFolderName(inboxFolderName);
-        	    	this.mAccount.setInboxFolderName(inboxFolderName);
-    				break;
-    			case FolderSyncParser.DRAFTS_TYPE:
-        	    	this.mAccount.setDraftsFolderName(folder.getName());
-    				break;
-    			case FolderSyncParser.DELETED_TYPE:
-        	    	this.mAccount.setTrashFolderName(folder.getName());
-    				break;
-    			case FolderSyncParser.SENT_TYPE:
-        	    	this.mAccount.setSentFolderName(folder.getName());
-    				break;
-    			case FolderSyncParser.OUTBOX_TYPE:
-    				// outbox folder is not synced
-    				break;
-    		}
-    	}
-    	
-    	return folderList;
+
+        try {
+            init();
+
+            Serializer s = new Serializer();
+            s.start(Tags.FOLDER_FOLDER_SYNC).start(Tags.FOLDER_SYNC_KEY)
+            .text(getStoreSyncKey()).end().end().done();
+            HttpResponse resp = sendHttpClientPost("FolderSync", s.toByteArray());
+            try {
+                int code = resp.getStatusLine().getStatusCode();
+                if (code == HttpStatus.SC_OK) {
+                    HttpEntity entity = resp.getEntity();
+                    int len = (int)entity.getContentLength();
+                    if (len != 0) {
+                        InputStream is = entity.getContent();
+                        // Returns true if we need to sync again
+                        if (new FolderSyncParser(is, this, folderList).parse()) {
+                            throw new RuntimeException();
+                        }
+                    }
+                } else if (isProvisionError(code)) {
+                    // If the sync error is a provisioning failure (perhaps the policies changed),
+                    // let's try the provisioning procedure
+                    // Provisioning must only be attempted for the account mailbox - trying to
+                    // provision any other mailbox may result in race conditions and the creation
+                    // of multiple policy keys.
+                    if (!tryProvision()) {
+                        // Set the appropriate failure status
+                        throw new RuntimeException();
+                    } else {
+                        // If we succeeded, try again...
+                        return getInitialFolderList();
+                    }
+                } else if (isAuthError(code)) {
+                    throw new RuntimeException();
+                } else {
+                    Log.w(K9.LOG_TAG, "FolderSync response error: " + code);
+                    throw new RuntimeException();
+                }
+            } finally {
+                reclaimConnection(resp);
+            }
+        } catch (IOException e) {
+            throw new MessagingException("io", e);
+        }
+
+        synchronized (mFolderList) {
+            mFolderList.clear();
+            for (Folder folder : folderList) {
+                mFolderList.put(folder.getRemoteName(), (EasFolder)folder);
+            }
+        }
+
+        for (Folder folder : folderList) {
+            int type = ((EasFolder) folder).mType;
+            switch (type) {
+            case FolderSyncParser.INBOX_TYPE:
+                String inboxFolderName = folder.getRemoteName();
+                this.mAccount.setAutoExpandFolderName(inboxFolderName);
+                this.mAccount.setInboxFolderName(inboxFolderName);
+                break;
+            case FolderSyncParser.DRAFTS_TYPE:
+                this.mAccount.setDraftsFolderName(folder.getRemoteName());
+                break;
+            case FolderSyncParser.DELETED_TYPE:
+                this.mAccount.setTrashFolderName(folder.getRemoteName());
+                break;
+            case FolderSyncParser.SENT_TYPE:
+                this.mAccount.setSentFolderName(folder.getRemoteName());
+                break;
+            case FolderSyncParser.OUTBOX_TYPE:
+                // outbox folder is not synced
+                break;
+            }
+        }
+
+        return folderList;
     }
 
     private boolean tryProvision() throws IOException, MessagingException {
@@ -707,26 +725,57 @@ public class EasStore extends Store {
         // by the server
         ProvisionParser pp = canProvision();
         if (pp != null) {
-        	String policyKey = acknowledgeProvision(pp.getPolicyKey(), PROVISION_STATUS_OK);
-        	mStoreSecuritySyncKey = policyKey;
-        	return true;
+            String policyKey = acknowledgeProvision(pp.getPolicyKey(), PROVISION_STATUS_OK);
+            mAccount.setSecurityKey(policyKey);
+            return true;
         } else {
-        	return false;
+            return false;
         }
-	}
+    }
 
-    @Override
-    public Folder getFolder(String name) {
-        synchronized (mFolderList) {
-            if (mFolderList.isEmpty()) {
-                try {
-                    getInitialFolderList();
-                }
-                catch (MessagingException e) {
-                    e.printStackTrace();
+    private void syncFoldersFromLocalStore() {
+        try {
+            LocalStore localStore = mAccount.getLocalStore();
+            if (localStore != null) {
+                List <? extends Folder > localFolders = localStore.getPersonalNamespaces(false);
+                synchronized (mFolderList) {
+                    for (Folder folder : localFolders) {
+                        int type = FolderSyncParser.USER_FOLDER_TYPE;
+                        if (folder.getRemoteName().equals(mAccount.getInboxFolderName())) {
+                            type = FolderSyncParser.INBOX_TYPE;
+                        } else if (folder.getRemoteName().equals(mAccount.getDraftsFolderName())) {
+                            type = FolderSyncParser.DRAFTS_TYPE;
+                        } else if (folder.getRemoteName().equals(mAccount.getTrashFolderName())) {
+                            type = FolderSyncParser.DELETED_TYPE;
+                        } else if (folder.getRemoteName().equals(mAccount.getSentFolderName())) {
+                            type = FolderSyncParser.SENT_TYPE;
+                        }
+
+                        EasFolder remoteFolder = new EasFolder(folder.getName(), folder.getRemoteName(), type);
+                        mFolderList.put(folder.getRemoteName(), remoteFolder);
+                        remoteFolder.setLocalFolder((LocalFolder)folder, true);
+                    }
                 }
             }
-            return mFolderList.get(name);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public Folder getFolder(String serverId) {
+        if (getStoreSyncKey().equals(INITIAL_SYNC_KEY)) {
+            try {
+                getInitialFolderList();
+            } catch (MessagingException e) {
+                e.printStackTrace();
+            }
+        }
+        synchronized (mFolderList) {
+            if (mFolderList.isEmpty()) {
+                syncFoldersFromLocalStore();
+            }
+            return mFolderList.get(serverId);
         }
     }
 
@@ -749,7 +798,7 @@ public class EasStore extends Store {
     public void sendMessages(Message[] messages) throws MessagingException {
         for (int i = 0; i < messages.length; i++) {
             Message message = messages[i];
-            
+
             try {
                 ByteArrayOutputStream out;
 
@@ -789,20 +838,17 @@ public class EasStore extends Store {
     private void setupHttpClient() throws MessagingException {
         if (mHttpClient == null) {
             HttpParams params = new BasicHttpParams();
-            
+
             // Disable automatic redirects on the http client.
             params.setBooleanParameter("http.protocol.handle-redirects", false);
-            
+
             HttpConnectionParams.setConnectionTimeout(params, CONNECTION_TIMEOUT);
             HttpConnectionParams.setSocketBufferSize(params, 8192);
 
             SchemeRegistry reg = new SchemeRegistry();
             try {
-                Scheme scheme = new Scheme("http", PlainSocketFactory.getSocketFactory(), 80);
-                reg.register(scheme);
-                
-                scheme = new Scheme("https", new TrustedSocketFactory(mHost, mSecure), 443);
-                reg.register(scheme);
+                reg.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+                reg.register(new Scheme("https", new TrustedSocketFactory(mHost, mSecure), 443));
             } catch (NoSuchAlgorithmException nsa) {
                 Log.e(K9.LOG_TAG, "NoSuchAlgorithmException in getHttpClient: " + nsa);
                 throw new MessagingException("NoSuchAlgorithmException in getHttpClient: " + nsa);
@@ -810,13 +856,13 @@ public class EasStore extends Store {
                 Log.e(K9.LOG_TAG, "KeyManagementException in getHttpClient: " + kme);
                 throw new MessagingException("KeyManagementException in getHttpClient: " + kme);
             }
-            
+
             // Create a thread-safe connection manager so that this class can be used from multiple threads.
             ClientConnectionManager cm = new ThreadSafeClientConnManager(params, reg);
             mHttpClient = new DefaultHttpClient(cm, params);
         }
     }
-    
+
     private void reclaimConnection(HttpResponse response) throws IOException {
         if (response != null && response.getEntity() != null) {
             // When using the thread-safe connection manager, we need to ensure the
@@ -837,8 +883,8 @@ public class EasStore extends Store {
         private String mServerId;
         private int mType;
         private boolean mIsOpen = false;
-        private int mMessageCount = 0;
-        private String mSyncKey;
+        private String mSyncKey = null;
+        private LocalFolder mLocalFolder = null;
 
         protected EasStore getStore() {
             return EasStore.this;
@@ -846,87 +892,70 @@ public class EasStore extends Store {
 
         public EasFolder(String name, String serverId, int type) {
             super(EasStore.this.getAccount());
-            this.mName = name;
-            this.mServerId = serverId;
-            this.mType = type;
+            mName = name;
+            mServerId = serverId;
+            mType = type;
         }
-        
-		public String getSyncKeyUnmodified() {
-			return mSyncKey;
-		}
-		
-		public String getSyncKey() {
-	        if (mSyncKey == null) {
-	            Log.d(K9.LOG_TAG, "Reset SyncKey to 0");
-	            mSyncKey = "0";
-	        }
-	        return mSyncKey;
-		}
 
-		public void setSyncKey(String mSyncKey) {
-			this.mSyncKey = mSyncKey;
-		}
-		
-		@Override
+        public void setLocalFolder(LocalFolder folder, boolean setSyncKey) {
+            mLocalFolder = folder;
+            if (setSyncKey && mLocalFolder != null) {
+                if (mSyncKey != null && !mSyncKey.equals(INITIAL_SYNC_KEY)) {
+                    Log.d(K9.LOG_TAG, "Overriding non-default SyncKey: " + mSyncKey);
+                }
+                mSyncKey = mLocalFolder.getPushState();
+            }
+        }
+
+        public String getSyncKey() throws MessagingException {
+            if (mSyncKey == null) {
+                Log.d(K9.LOG_TAG, "Reset SyncKey to 0");
+                setSyncKey(INITIAL_SYNC_KEY);
+            }
+            return mSyncKey;
+        }
+
+        public void setSyncKey(String key) throws MessagingException {
+            mSyncKey = key;
+            if (mLocalFolder != null) {
+                mLocalFolder.setPushState(mSyncKey);
+            }
+        }
+
+        @Override
         public boolean isSyncMode() {
-        	return true;
+            return true;
         }
 
         @Override
         public void open(OpenMode mode) throws MessagingException {
-            this.mIsOpen = true;
+            mIsOpen = true;
         }
 
         @Override
         public void copyMessages(Message[] messages, Folder folder) throws MessagingException {
-            moveOrCopyMessages(messages, folder.getName(), false);
+            moveOrCopyMessages(messages, folder.getRemoteName(), false);
         }
 
         @Override
         public void moveMessages(Message[] messages, Folder folder) throws MessagingException {
-            moveOrCopyMessages(messages, folder.getName(), true);
+            moveOrCopyMessages(messages, folder.getRemoteName(), true);
         }
 
         @Override
         public void delete(Message[] msgs, String trashFolderName) throws MessagingException {
-        	String[] uids = new String[msgs.length];
+            String[] uids = new String[msgs.length];
 
             for (int i = 0, count = msgs.length; i < count; i++) {
                 uids[i] = msgs[i].getUid();
             }
-            
+
             deleteServerMessages(uids);
         }
 
         private void moveOrCopyMessages(Message[] messages, String folderName, boolean isMove)
         throws MessagingException {
-//            String[] uids = new String[messages.length];
-//
-//            for (int i = 0, count = messages.length; i < count; i++) {
-//                uids[i] = messages[i].getUid();
-//            }
-//            String messageBody = "";
-//            HashMap<String, String> headers = new HashMap<String, String>();
-//            HashMap<String, String> uidToUrl = getMessageUrls(uids);
-//            String[] urls = new String[uids.length];
-//
-//            for (int i = 0, count = uids.length; i < count; i++) {
-//                urls[i] = uidToUrl.get(uids[i]);
-//                if (urls[i] == null && messages[i] instanceof EasMessage) {
-//                    EasMessage wdMessage = (EasMessage) messages[i];
-//                    urls[i] = wdMessage.getUrl();
-//                }
-//            }
-//
-//            messageBody = getMoveOrCopyMessagesReadXml(urls, isMove);
-//            EasFolder destFolder = (EasFolder) store.getFolder(folderName);
-//            headers.put("Destination", destFolder.mFolderUrl);
-//            headers.put("Brief", "t");
-//            headers.put("If-Match", "*");
-//            String action = (isMove ? "BMOVE" : "BCOPY");
-//            Log.i(K9.LOG_TAG, "Moving " + messages.length + " messages to " + destFolder.mFolderUrl);
-//
-//            processRequest(mFolderUrl, action, messageBody, headers, false);
+            // EASTODO
         }
 
         @Override
@@ -946,7 +975,7 @@ public class EasStore extends Store {
 
         @Override
         public boolean isOpen() {
-            return this.mIsOpen;
+            return mIsOpen;
         }
 
         @Override
@@ -955,8 +984,13 @@ public class EasStore extends Store {
         }
 
         @Override
+        public String getRemoteName() {
+            return mServerId;
+        }
+
+        @Override
         public String getName() {
-            return this.mName;
+            return mName;
         }
 
         @Override
@@ -966,8 +1000,7 @@ public class EasStore extends Store {
 
         @Override
         public void close() {
-            this.mMessageCount = 0;
-            this.mIsOpen = false;
+            mIsOpen = false;
         }
 
         @Override
@@ -977,7 +1010,8 @@ public class EasStore extends Store {
 
         @Override
         public void delete(boolean recursive) throws MessagingException {
-            throw new Error("WebDavFolder.delete() not implemeneted");
+            // EASTODO
+            throw new Error("EasFolder.delete() not implemeneted");
         }
 
         @Override
@@ -988,138 +1022,133 @@ public class EasStore extends Store {
         @Override
         public Message[] getMessages(int start, int end, Date earliestDate, MessageRetrievalListener listener)
         throws MessagingException {
-        	try {
-        		EasEmailSyncParser syncParser = getMessagesInternal(null, null, null, start, end);
-            
-            	List<EasMessage> messages = syncParser.getMessages();
-            	
-            	return messages.toArray(EMPTY_MESSAGE_ARRAY);
-        	} catch (IOException e) {
-				throw new MessagingException("getMessages call failed", e);
-			}
+            try {
+                EasEmailSyncParser syncParser = getMessagesInternal(null, null, null, start, end);
+
+                List<EasMessage> messages = syncParser.getMessages();
+
+                return messages.toArray(EMPTY_MESSAGE_ARRAY);
+            } catch (IOException e) {
+                throw new MessagingException("getMessages call failed", e);
+            }
         }
 
-		private EasEmailSyncParser getMessagesInternal(Message[] messages, FetchProfile fp, MessageRetrievalListener listener,
-				int start, int end) throws IOException,
-				MessagingException {
+        private EasEmailSyncParser getMessagesInternal(Message[] messages, FetchProfile fp, MessageRetrievalListener listener,
+                int start, int end) throws IOException, MessagingException {
+            Serializer s = new Serializer();
+            EasEmailSyncParser syncParser = null;
+//          EmailSyncAdapter target = new EmailSyncAdapter(this, mAccount);
 
-        	Serializer s = new Serializer();
-        	EasEmailSyncParser syncParser = null;
-//			EmailSyncAdapter target = new EmailSyncAdapter(this, mAccount);
-			
-			String className = "Email";
-			String syncKey = getSyncKey();
-//            	userLog("sync, sending ", className, " syncKey: ", syncKey);
-			s.start(Tags.SYNC_SYNC)
-			    .start(Tags.SYNC_COLLECTIONS)
-			    .start(Tags.SYNC_COLLECTION)
-			    .data(Tags.SYNC_CLASS, className)
-			    .data(Tags.SYNC_SYNC_KEY, syncKey)
-			    .data(Tags.SYNC_COLLECTION_ID, mServerId);
+            String className = "Email";
+            String syncKey = getSyncKey();
+//              userLog("sync, sending ", className, " syncKey: ", syncKey);
+            s.start(Tags.SYNC_SYNC)
+            .start(Tags.SYNC_COLLECTIONS)
+            .start(Tags.SYNC_COLLECTION)
+            .data(Tags.SYNC_CLASS, className)
+            .data(Tags.SYNC_SYNC_KEY, syncKey)
+            .data(Tags.SYNC_COLLECTION_ID, mServerId);
 
-			// Start with the default timeout
-			int timeout = COMMAND_TIMEOUT;
-			
-		    // EAS doesn't allow GetChanges in an initial sync; sending other options
-		    // appears to cause the server to delay its response in some cases, and this delay
-		    // can be long enough to result in an IOException and total failure to sync.
-		    // Therefore, we don't send any options with the initial sync.
-			if (!syncKey.equals("0")) {
-	            boolean fetchBodySane = (fp != null) && fp.contains(FetchProfile.Item.BODY_SANE);
-	            boolean fetchBody = (fp != null) && fp.contains(FetchProfile.Item.BODY);
-	            
-			    s.tag(Tags.SYNC_DELETES_AS_MOVES);
-			    
-			    if (messages == null) {
-			    	s.tag(Tags.SYNC_GET_CHANGES);
-//			    	s.data(Tags.SYNC_WINDOW_SIZE, Integer.toString(end - start + 1));
-			    }
-			    // Handle options
-			    s.start(Tags.SYNC_OPTIONS);
-			    if (messages == null) {
-			    	// Set the lookback appropriately (EAS calls this a "filter") for all but Contacts
-			    	s.data(Tags.SYNC_FILTER_TYPE, getEmailFilter());
-			    }
-			    // Enable MimeSupport
-			    s.data(Tags.SYNC_MIME_SUPPORT, "2");
-			    // Set the truncation amount for all classes
-			    if (mProtocolVersionDouble >= Eas.SUPPORTED_PROTOCOL_EX2007_DOUBLE) {
-			        s.start(Tags.BASE_BODY_PREFERENCE)
-			        // HTML for email; plain text for everything else
-			        .data(Tags.BASE_TYPE, Eas.BODY_PREFERENCE_MIME);
-			        
-			        if (!fetchBody) {
-			        	String truncationSize = "0";
-			        	if (fetchBodySane) {
-			        		truncationSize = Eas.EAS12_TRUNCATION_SIZE;
-			        	}
-			        	s.data(Tags.BASE_TRUNCATION_SIZE, truncationSize);
-			        }
-			        
-			        s.end();
-			    } else {
-			    	String syncTruncation = "0";
-			        if (fetchBody) {
-			        	syncTruncation = "8";
-			        } else if (fetchBodySane) {
-			        	syncTruncation = "7";
-			        }
-			        s.data(Tags.SYNC_MIME_TRUNCATION, syncTruncation);
-			    }
-			    s.end();
-			} else {
-			    // Use enormous timeout for initial sync, which empirically can take a while longer
-			    timeout = 120 * 1000;
-			}
-			
-		    if (messages != null) {
-		    	s.start(Tags.SYNC_COMMANDS);
-		    	for (Message msg : messages) {
-		    		String serverId = msg.getUid();
-		    		s.start(Tags.SYNC_FETCH);
-		    			s.data(Tags.SYNC_SERVER_ID, serverId);
-		    		s.end();
-		    	}
-		    	s.end();
-		    }
-//	            // Send our changes up to the server
-//	            target.sendLocalChanges(s);
+            // Start with the default timeout
+            int timeout = COMMAND_TIMEOUT;
 
-			s.end().end().end().done();
-			HttpResponse resp = sendHttpClientPost("Sync", new ByteArrayEntity(s.toByteArray()), timeout);
-			try {
-    			int code = resp.getStatusLine().getStatusCode();
-    			if (code == HttpStatus.SC_OK) {
-    			    InputStream is = resp.getEntity().getContent();
-    			    if (is != null) {
-    		        	syncParser = new EasEmailSyncParser(is, this, mAccount);
-    			        
-    		        	boolean moreAvailable = syncParser.parse();
-    		        	
-    			        if (moreAvailable && syncKey.equals("0")) {
-    			        	return getMessagesInternal(messages, fp, listener, start, end);
-    			        }
-    			    } else {
-    			    	Log.d(K9.LOG_TAG, "Empty input stream in sync command response");
-    			    }
-    			} else {
-//	                userLog("Sync response error: ", code);
-//	                if (isProvisionError(code)) {
-//	                    mExitStatus = EXIT_SECURITY_FAILURE;
-//	                } else if (isAuthError(code)) {
-//	                    mExitStatus = EXIT_LOGIN_FAILURE;
-//	                } else {
-//	                    mExitStatus = EXIT_IO_ERROR;
-//	                }
-//	                return;
-    				throw new MessagingException("not ok status");
-    			}
-			} finally {
-			    reclaimConnection(resp);
-			}
-			return syncParser;
-		}
-        
+            // EAS doesn't allow GetChanges in an initial sync; sending other options
+            // appears to cause the server to delay its response in some cases, and this delay
+            // can be long enough to result in an IOException and total failure to sync.
+            // Therefore, we don't send any options with the initial sync.
+            if (!syncKey.equals(INITIAL_SYNC_KEY)) {
+                boolean fetchBodySane = (fp != null) && fp.contains(FetchProfile.Item.BODY_SANE);
+                boolean fetchBody = (fp != null) && fp.contains(FetchProfile.Item.BODY);
+
+                s.tag(Tags.SYNC_DELETES_AS_MOVES);
+
+                if (messages == null) {
+                    s.tag(Tags.SYNC_GET_CHANGES);
+                    // EASTODO: s.data(Tags.SYNC_WINDOW_SIZE, Integer.toString(end - start + 1));
+                }
+                // Handle options
+                s.start(Tags.SYNC_OPTIONS);
+                if (messages == null) {
+                    // Set the lookback appropriately (EAS calls this a "filter") for all but Contacts
+                    s.data(Tags.SYNC_FILTER_TYPE, getEmailFilter());
+                }
+                // Enable MimeSupport
+                s.data(Tags.SYNC_MIME_SUPPORT, "2");
+                // Set the truncation amount for all classes
+                if (mProtocolVersionDouble >= Eas.SUPPORTED_PROTOCOL_EX2007_DOUBLE) {
+                    s.start(Tags.BASE_BODY_PREFERENCE)
+                    // HTML for email; plain text for everything else
+                    .data(Tags.BASE_TYPE, Eas.BODY_PREFERENCE_MIME);
+
+                    if (!fetchBody) {
+                        String truncationSize = "0";
+                        if (fetchBodySane) {
+                            truncationSize = Eas.EAS12_TRUNCATION_SIZE;
+                        }
+                        s.data(Tags.BASE_TRUNCATION_SIZE, truncationSize);
+                    }
+
+                    s.end();
+                } else {
+                    String syncTruncation = "0";
+                    if (fetchBody) {
+                        syncTruncation = "8";
+                    } else if (fetchBodySane) {
+                        syncTruncation = "7";
+                    }
+                    s.data(Tags.SYNC_MIME_TRUNCATION, syncTruncation);
+                }
+                s.end();
+            } else {
+                // Use enormous timeout for initial sync, which empirically can take a while longer
+                timeout = 120 * 1000;
+            }
+
+            if (messages != null) {
+                s.start(Tags.SYNC_COMMANDS);
+                for (Message msg : messages) {
+                    String serverId = msg.getUid();
+                    s.start(Tags.SYNC_FETCH);
+                    s.data(Tags.SYNC_SERVER_ID, serverId);
+                    s.end();
+                }
+                s.end();
+            }
+
+            s.end().end().end().done();
+
+            HttpResponse resp = sendHttpClientPost("Sync", new ByteArrayEntity(s.toByteArray()), timeout);
+            try {
+                int code = resp.getStatusLine().getStatusCode();
+                if (code == HttpStatus.SC_OK) {
+                    InputStream is = resp.getEntity().getContent();
+                    if (is != null) {
+                        syncParser = new EasEmailSyncParser(is, this, mAccount);
+                        boolean moreAvailable = syncParser.parse();
+                        if (moreAvailable && !syncParser.hasMessages()) {
+                            // Make sure we free the connection to the pool before recursing. Otherwise
+                            // we'll dead lock.
+                            reclaimConnection(resp);
+                            return getMessagesInternal(messages, fp, listener, start, end);
+                        }
+                    } else {
+                        Log.d(K9.LOG_TAG, "Empty input stream in sync command response");
+                    }
+                } else {
+                    if (isProvisionError(code)) {
+                        throw new MessagingException("Provision error received while downloading messages");
+                    } else if (isAuthError(code)) {
+                        throw new MessagingException("Authentication error received while downloading messages");
+                    } else {
+                        throw new MessagingException("Unknown error received while downloading messages");
+                    }
+                }
+            } finally {
+                reclaimConnection(resp);
+            }
+            return syncParser;
+        }
+
         private String getEmailFilter() {
             String filter = Eas.FILTER_1_WEEK;
 //            switch (mAccount.mSyncLookback) {
@@ -1144,7 +1173,7 @@ public class EasStore extends Store {
 //                    break;
 //                }
 //                case com.android.email.Account.SYNC_WINDOW_ALL: {
-                    filter = Eas.FILTER_ALL;
+            filter = Eas.FILTER_ALL;
 //                    break;
 //                }
 //            }
@@ -1190,34 +1219,34 @@ public class EasStore extends Store {
                     messages.length == 0) {
                 return;
             }
-            
+
             for (int i = 0, count = messages.length; i < count; i++) {
                 if (!(messages[i] instanceof EasMessage)) {
                     throw new MessagingException("EasStore fetch called with non-EasMessage");
                 }
             }
-            
+
             boolean fetchBodySane = fp.contains(FetchProfile.Item.BODY_SANE);
             boolean fetchBody = fp.contains(FetchProfile.Item.BODY);
-			if (fetchBodySane || fetchBody) {
-	            try {
-	            	EasEmailSyncParser syncParser = getMessagesInternal(messages, fp, listener, -1, -1);
-					messages = syncParser.getMessages().toArray(EMPTY_MESSAGE_ARRAY);
-	            } catch (IOException e) {
-	            	throw new MessagingException("io exception while fetching messages", e);
-	            }
+            if (fetchBodySane || fetchBody) {
+                try {
+                    EasEmailSyncParser syncParser = getMessagesInternal(messages, fp, listener, -1, -1);
+                    messages = syncParser.getMessages().toArray(EMPTY_MESSAGE_ARRAY);
+                } catch (IOException e) {
+                    throw new MessagingException("IO exception while fetching messages", e);
+                }
             }
-			
+
             for (int i = 0, count = messages.length; i < count; i++) {
-            	EasMessage easMessage = (EasMessage) messages[i];
-                
-	            if (listener != null) {
-	                listener.messageStarted(easMessage.getUid(), i, count);
-	            }
-	            
-	            if (listener != null) {
-	            	listener.messageFinished(easMessage, i, count);
-	            }
+                EasMessage easMessage = (EasMessage) messages[i];
+
+                if (listener != null) {
+                    listener.messageStarted(easMessage.getUid(), i, count);
+                }
+
+                if (listener != null) {
+                    listener.messageFinished(easMessage, i, count);
+                }
             }
         }
 
@@ -1245,53 +1274,56 @@ public class EasStore extends Store {
         }
 
         private void markServerMessagesRead(final String[] uids, final boolean read) throws MessagingException {
-			new SyncCommand() {
-				@Override
-				void prepareCommand(Serializer s) throws IOException {
-			    	s.start(Tags.SYNC_COMMANDS);
-			    	for (String serverId : uids) {
-			    		s.start(Tags.SYNC_CHANGE)
-			    			.data(Tags.SYNC_SERVER_ID, serverId)
-			    			.start(Tags.SYNC_APPLICATION_DATA)
-			    				.data(Tags.EMAIL_READ, read ? "1" : "0")
-			    			.end()
-			    		.end();
-			    	}
-			    	s.end();
-				}
-			}.send(this);
+            new SyncCommand() {
+                @Override
+                void prepareCommand(Serializer s) throws IOException {
+                    s.start(Tags.SYNC_COMMANDS);
+                    for (String serverId : uids) {
+                        s.start(Tags.SYNC_CHANGE)
+                        .data(Tags.SYNC_SERVER_ID, serverId)
+                        .start(Tags.SYNC_APPLICATION_DATA)
+                        .data(Tags.EMAIL_READ, read ? "1" : "0")
+                        .end()
+                        .end();
+                    }
+                    s.end();
+                }
+            } .send(this);
         }
 
         private void deleteServerMessages(final String[] uids) throws MessagingException {
-			new SyncCommand() {
-				@Override
-				void prepareCommand(Serializer s) throws IOException {
-					s.tag(Tags.SYNC_DELETES_AS_MOVES);
-					
-			    	s.start(Tags.SYNC_COMMANDS);
-			    	for (String serverId : uids) {
-			    		s.start(Tags.SYNC_DELETE)
-			    			.data(Tags.SYNC_SERVER_ID, serverId)
-			    		.end();
-			    	}
-			    	s.end();
-				}
-			}.send(this);
+            new SyncCommand() {
+                @Override
+                void prepareCommand(Serializer s) throws IOException {
+                    s.tag(Tags.SYNC_DELETES_AS_MOVES);
+
+                    s.start(Tags.SYNC_COMMANDS);
+                    for (String serverId : uids) {
+                        s.start(Tags.SYNC_DELETE)
+                        .data(Tags.SYNC_SERVER_ID, serverId)
+                        .end();
+                    }
+                    s.end();
+                }
+            } .send(this);
         }
 
         @Override
         public void appendMessages(Message[] messages) throws MessagingException {
-//            appendWebDavMessages(messages);
+            // EASTODO
         }
 
         @Override
         public boolean equals(Object o) {
+            if (o instanceof EasFolder) {
+                return mServerId.equals(((EasFolder)o).mServerId);
+            }
             return false;
         }
 
         @Override
         public int hashCode() {
-            return super.hashCode();
+            return mServerId.hashCode();
         }
 
         @Override
@@ -1307,6 +1339,11 @@ public class EasStore extends Store {
             Log.e(K9.LOG_TAG,
                   "Unimplemented method setFlags(Flag[], boolean) breaks markAllMessagesAsRead and EmptyTrash");
             // Try to make this efficient by not retrieving all of the messages
+        }
+
+        @Override
+        public String getNewPushState(String oldPushState, Message message) {
+            return mSyncKey;
         }
     }
 
@@ -1337,7 +1374,7 @@ public class EasStore extends Store {
 //            Log.i(K9.LOG_TAG, "Deleting message by moving to " + trashFolderName);
 //            mFolder.moveMessages(new Message[] { this }, mFolder.getStore().getFolder(trashFolderName));
             Log.e(K9.LOG_TAG,
-            	"Unimplemented method delete(String trashFolderName) legacy api, should not be in use");
+                  "Unimplemented method delete(String trashFolderName) legacy api, should not be in use");
         }
 
         @Override
@@ -1346,17 +1383,17 @@ public class EasStore extends Store {
             mFolder.setFlags(new Message[] { this }, new Flag[] { flag }, set);
         }
     }
-    
+
     @Override
     public boolean isPushCapable() {
-    	return true;
+        return true;
     }
-    
+
     @Override
     public Pusher getPusher(PushReceiver receiver) {
-    	return new EasPusher(this, receiver);
+        return new EasPusher(this, receiver);
     }
-    
+
     public class EasPusher implements Pusher {
         final EasStore mStore;
         final PushReceiver receiver;
@@ -1371,12 +1408,12 @@ public class EasStore extends Store {
         public EasPusher(EasStore store, PushReceiver receiver) {
             mStore = store;
             this.receiver = receiver;
-            
+
             TracingPowerManager pm = TracingPowerManager.getPowerManager(receiver.getContext());
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "EasPusher " + store.getAccount().getDescription());
             wakeLock.setReferenceCounted(false);
         }
-        
+
         private String getLogId() {
             String id = getAccount().getDescription() + "/" + Thread.currentThread().getName();
             return id;
@@ -1384,7 +1421,7 @@ public class EasStore extends Store {
 
         public void start(final List<String> folderNames) {
             stop();
-            
+
             Runnable runner = new Runnable() {
                 public void run() {
                     wakeLock.acquire(K9.PUSH_WAKE_LOCK_TIMEOUT);
@@ -1393,54 +1430,56 @@ public class EasStore extends Store {
 
                     while (!stop.get()) {
                         try {
-                        	Serializer s = new Serializer();
-                        	
-                        	int responseTimeout = getAccount().getIdleRefreshMinutes() * 60 + (IDLE_READ_TIMEOUT_INCREMENT / 1000);
-							s.start(Tags.PING_PING)
-                        		.data(Tags.PING_HEARTBEAT_INTERVAL, String.valueOf(responseTimeout))
-                        		.start(Tags.PING_FOLDERS);
-							
-							synchronized (mFolderList) {
-    							for (String folderName : folderNames) {
-        							s.start(Tags.PING_FOLDER)
-        								.data(Tags.PING_ID, mFolderList.get(folderName).mServerId)
-        								.data(Tags.PING_CLASS, "Email")
-        							.end();
-    							}
-							}
-							
-							s.end().end().done();
-                        	
-                        	int timeout = responseTimeout * 1000 + IDLE_READ_TIMEOUT_INCREMENT;
-							HttpResponse resp = sendHttpClientPost(PING_COMMAND, new ByteArrayEntity(s.toByteArray()),
-                			        timeout);
-							try {
-    							int code = resp.getStatusLine().getStatusCode();
-    							if (code == HttpStatus.SC_OK) {
-    							    InputStream is = resp.getEntity().getContent();
-    							    if (is != null) {
-    									PingParser pingParser = new PingParser(is);
-    							    	if (!pingParser.parse()) {
-    								    	for (String folderServerId : pingParser.getFolderList()) {
-    								    		for (EasFolder folder : mFolderList.values()) {
-    								    			if (folderServerId.equals(folder.mServerId)) {
-    								    				receiver.syncFolder(folder);
-    								    				break;
-    								    			}
-    								    		}
-    								    	}
-    							    	} else {
-    							    		throw new MessagingException("Parsing of Ping response failed");
-    							    	}
-    							    } else {
-    							    	Log.d(K9.LOG_TAG, "Empty input stream in sync command response");
-    							    }
-    							} else {
-    								throw new MessagingException("not ok status");
-    							}
-							} finally {
-							    reclaimConnection(resp);
-							}
+                            Serializer s = new Serializer();
+
+                            int responseTimeout = getAccount().getIdleRefreshMinutes() * 60 + (IDLE_READ_TIMEOUT_INCREMENT / 1000);
+                            s.start(Tags.PING_PING)
+                            .data(Tags.PING_HEARTBEAT_INTERVAL, String.valueOf(responseTimeout))
+                            .start(Tags.PING_FOLDERS);
+
+                            // Using getFolder here will ensure we have retrieved the folder list from the server.
+                            for (String folderName : folderNames) {
+                                EasFolder folder = (EasFolder)mStore.getFolder(folderName);
+                                if (folder != null) {
+                                    s.start(Tags.PING_FOLDER)
+                                    .data(Tags.PING_ID, folder.mServerId)
+                                    .data(Tags.PING_CLASS, "Email")
+                                    .end();
+                                }
+                            }
+
+                            s.end().end().done();
+
+                            int timeout = responseTimeout * 1000 + IDLE_READ_TIMEOUT_INCREMENT;
+                            HttpResponse resp = sendHttpClientPost(PING_COMMAND, new ByteArrayEntity(s.toByteArray()),
+                                                                   timeout);
+                            try {
+                                int code = resp.getStatusLine().getStatusCode();
+                                if (code == HttpStatus.SC_OK) {
+                                    InputStream is = resp.getEntity().getContent();
+                                    if (is != null) {
+                                        PingParser pingParser = new PingParser(is);
+                                        if (!pingParser.parse()) {
+                                            for (String folderServerId : pingParser.getFolderList()) {
+                                                Folder folder = mStore.getFolder(folderServerId);
+                                                if (folder != null) {
+                                                    receiver.syncFolder(folder);
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            throw new MessagingException("Parsing of Ping response failed");
+                                        }
+                                    } else {
+                                        Log.d(K9.LOG_TAG, "Empty input stream in sync command response");
+                                    }
+                                } else {
+                                    throw new MessagingException("Received an unsuccessful HTTP status during a ping request: "
+                                                                 + String.valueOf(code));
+                                }
+                            } finally {
+                                reclaimConnection(resp);
+                            }
                         } catch (Exception e) {
                             wakeLock.acquire(K9.PUSH_WAKE_LOCK_TIMEOUT);
 //                            receiver.setPushActive(getName(), false);
@@ -1465,11 +1504,11 @@ public class EasStore extends Store {
                             }
                         }
                     }
-                    
+
                     for (String folderName : folderNames) {
-                    	receiver.setPushActive(folderName, false);
+                        receiver.setPushActive(folderName, false);
                     }
-                    
+
                     try {
                         if (K9.DEBUG)
                             Log.i(K9.LOG_TAG, "Pusher for " + getLogId() + " is exiting");
@@ -1504,61 +1543,61 @@ public class EasStore extends Store {
             this.lastRefresh = lastRefresh;
         }
     }
-    
+
     private abstract class SyncCommand {
-    	
-    	public void send(EasFolder folder) throws MessagingException {
-    		try {
-    			int timeout = COMMAND_TIMEOUT;
-    			
-				byte[] byteArr = prepare(folder);
-				
-				HttpResponse resp = sendHttpClientPost("Sync", new ByteArrayEntity(byteArr), timeout);
-				try {
-    				int code = resp.getStatusLine().getStatusCode();
-    				if (code == HttpStatus.SC_OK) {
-    				    InputStream is = resp.getEntity().getContent();
-    				    if (is != null) {
-    			            EasEmailSyncParser syncParser = new EasEmailSyncParser(is, folder, folder.getAccount());
-    			            parseResponse(syncParser, is);
-    				    } else {
-    				    	Log.d(K9.LOG_TAG, "Empty input stream in sync command response");
-    				    }
-    				} else {
-    					throw new MessagingException("not ok status");
-    				}
-				} finally {
-				    reclaimConnection(resp);
-				}
-			} catch (IOException e) {
-				throw new MessagingException("could not send command");
-			}
-    	}
-    	
-		byte[] prepare(EasFolder folder) throws IOException {
-        	Serializer s = new Serializer();
-        	
-			String className = "Email";
-			String syncKey = folder.getSyncKey();
-			String folderServerId = folder.mServerId;
-			s.start(Tags.SYNC_SYNC)
-			    .start(Tags.SYNC_COLLECTIONS)
-			    .start(Tags.SYNC_COLLECTION)
-			    .data(Tags.SYNC_CLASS, className)
-			    .data(Tags.SYNC_SYNC_KEY, syncKey)
-			    .data(Tags.SYNC_COLLECTION_ID, folderServerId );
 
-			prepareCommand(s);
+        public void send(EasFolder folder) throws MessagingException {
+            try {
+                int timeout = COMMAND_TIMEOUT;
 
-			s.end().end().end().done();
-			
-			return s.toByteArray();
-    	}
+                byte[] byteArr = prepare(folder);
 
-		abstract void prepareCommand(Serializer s) throws IOException;
-    	
-    	void parseResponse(EasEmailSyncParser syncParser, InputStream is) throws IOException, MessagingException {
-    		syncParser.parse();
-    	}
+                HttpResponse resp = sendHttpClientPost("Sync", new ByteArrayEntity(byteArr), timeout);
+                try {
+                    int code = resp.getStatusLine().getStatusCode();
+                    if (code == HttpStatus.SC_OK) {
+                        InputStream is = resp.getEntity().getContent();
+                        if (is != null) {
+                            EasEmailSyncParser syncParser = new EasEmailSyncParser(is, folder, folder.getAccount());
+                            parseResponse(syncParser, is);
+                        } else {
+                            Log.d(K9.LOG_TAG, "Empty input stream in sync command response");
+                        }
+                    } else {
+                        throw new MessagingException("not ok status");
+                    }
+                } finally {
+                    reclaimConnection(resp);
+                }
+            } catch (IOException e) {
+                throw new MessagingException("could not send command");
+            }
+        }
+
+        byte[] prepare(EasFolder folder) throws IOException, MessagingException {
+            Serializer s = new Serializer();
+
+            String className = "Email";
+            String syncKey = folder.getSyncKey();
+            String folderServerId = folder.mServerId;
+            s.start(Tags.SYNC_SYNC)
+            .start(Tags.SYNC_COLLECTIONS)
+            .start(Tags.SYNC_COLLECTION)
+            .data(Tags.SYNC_CLASS, className)
+            .data(Tags.SYNC_SYNC_KEY, syncKey)
+            .data(Tags.SYNC_COLLECTION_ID, folderServerId);
+
+            prepareCommand(s);
+
+            s.end().end().end().done();
+
+            return s.toByteArray();
+        }
+
+        abstract void prepareCommand(Serializer s) throws IOException;
+
+        void parseResponse(EasEmailSyncParser syncParser, InputStream is) throws IOException, MessagingException {
+            syncParser.parse();
+        }
     }
 }

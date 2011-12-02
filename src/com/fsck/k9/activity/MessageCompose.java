@@ -466,7 +466,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                 if (mAutoEncrypt && crypto.isAvailable(getApplicationContext())) {
                     for (Address address : getRecipientAddresses()) {
                         if (crypto.hasPublicKeyForEmail(getApplicationContext(),
-                                address.getAddress())) {
+                        address.getAddress())) {
                             mEncryptCheckbox.setChecked(true);
                             mContinueWithoutPublicKey = false;
                             break;
@@ -722,8 +722,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
              * Dear developer, if your application is using those EXTRAs you're doing
              * it wrong! So go fix your program or get AOSP to change the documentation.
              */
-        }
-        else if (Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)) {
+        } else if (Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action)) {
             /*
              * Note: Here we allow a slight deviation from the documentated behavior.
              * EXTRA_TEXT is used as message body (if available) regardless of the MIME
@@ -854,7 +853,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         // don't do this if only changing orientations
         if ((getChangingConfigurations() & ActivityInfo.CONFIG_ORIENTATION) == 0) {
             // don't do this if selecting signature or if "Encrypt" is checked or if adding an attachment
-            if (!mPreventDraftSaving && !mEncryptCheckbox.isChecked() && !mIgnoreOnStop){
+            if (!mPreventDraftSaving && !mEncryptCheckbox.isChecked() && !mIgnoreOnStop) {
                 saveIfNeeded();
                 finish();
             }
@@ -973,7 +972,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
      */
     private Address[] getRecipientAddresses() {
         String addresses = mToView.getText().toString() + mCcView.getText().toString()
-                + mBccView.getText().toString();
+                           + mBccView.getText().toString();
         return Address.parseUnencoded(addresses.trim());
     }
 
@@ -999,7 +998,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         String action = getIntent().getAction();
         if (mAccount.isReplyAfterQuote() &&
                 (ACTION_REPLY.equals(action) || ACTION_REPLY_ALL.equals(action) ||
-                        ACTION_EDIT_DRAFT.equals(action))) {
+                 ACTION_EDIT_DRAFT.equals(action))) {
             replyAfterQuote = true;
         }
 
@@ -1146,7 +1145,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         }
 
         // Build the body.
-        // TODO FIXME - body can be either an HTML or Text part, depending on whether we're in 
+        // TODO FIXME - body can be either an HTML or Text part, depending on whether we're in
         // HTML mode or not.  Should probably fix this so we don't mix up html and text parts.
         TextBody body = null;
         if (mPgpData.getEncryptedData() != null) {
@@ -1332,7 +1331,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         }
         if (mQuotedHtmlContent != null) {
             uri.appendQueryParameter(IdentityField.FOOTER_OFFSET.value(),
-                    Integer.toString(mQuotedHtmlContent.getFooterInsertionPoint()));
+                                     Integer.toString(mQuotedHtmlContent.getFooterInsertionPoint()));
         }
         if (bodyPlain != null) {
             if (bodyPlain.getComposedMessageLength() != null && bodyPlain.getComposedMessageOffset() != null) {
@@ -1472,7 +1471,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         String signature = "";
         if (mIdentity.getSignatureUse()) {
             signature = mSignatureView.getText().toString();
-            if(!StringUtils.isNullOrEmpty(signature)) {
+            if (!StringUtils.isNullOrEmpty(signature)) {
                 signature = HtmlConverter.textToHtmlFragment("\n" + signature);
             }
         }
@@ -2030,8 +2029,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     public void onBackPressed() {
         if (mEncryptCheckbox.isChecked()) {
             showDialog(DIALOG_REFUSE_TO_SAVE_DRAFT_MARKED_ENCRYPTED);
-        }
-        else if (mDraftNeedsSaving) {
+        } else if (mDraftNeedsSaving) {
             showDialog(DIALOG_SAVE_OR_DISCARD_DRAFT_MESSAGE);
         } else {
             super.onBackPressed();
@@ -2352,17 +2350,17 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                                      ? Integer.parseInt(k9identity.get(IdentityField.OFFSET))
                                      : 0;
                 Integer bodyFooterOffset = k9identity.get(IdentityField.FOOTER_OFFSET) != null
-                        ? Integer.parseInt(k9identity.get(IdentityField.FOOTER_OFFSET))
-                        : null;
+                                           ? Integer.parseInt(k9identity.get(IdentityField.FOOTER_OFFSET))
+                                           : null;
                 Integer bodyPlainLength = k9identity.get(IdentityField.PLAIN_LENGTH) != null
-                        ? Integer.parseInt(k9identity.get(IdentityField.PLAIN_LENGTH))
-                        : null;
+                                          ? Integer.parseInt(k9identity.get(IdentityField.PLAIN_LENGTH))
+                                          : null;
                 Integer bodyPlainOffset = k9identity.get(IdentityField.PLAIN_OFFSET) != null
-                        ? Integer.parseInt(k9identity.get(IdentityField.PLAIN_OFFSET))
-                        : null;
+                                          ? Integer.parseInt(k9identity.get(IdentityField.PLAIN_OFFSET))
+                                          : null;
                 mQuoteStyle = k9identity.get(IdentityField.QUOTE_STYLE) != null
-                        ? QuoteStyle.valueOf(k9identity.get(IdentityField.QUOTE_STYLE))
-                        : mAccount.getQuoteStyle();
+                              ? QuoteStyle.valueOf(k9identity.get(IdentityField.QUOTE_STYLE))
+                              : mAccount.getQuoteStyle();
 
                 // Always respect the user's current composition format preference, even if the
                 // draft was saved in a different format.
@@ -2451,7 +2449,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
      * @throws MessagingException
      */
     private void processSourceMessageText(Message message, Integer bodyOffset, Integer bodyLength,
-            boolean viewMessageContent) throws MessagingException {
+                                          boolean viewMessageContent) throws MessagingException {
         Part textPart = MimeUtility.findFirstPartByMimeType(message, "text/plain");
         if (textPart != null) {
             String text = MimeUtility.getTextFromPart(textPart);
@@ -2470,7 +2468,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                     // top-posting: ignore two newlines at start of quote
                     quotedText.append(text.substring(bodyLength + 2));
                 } else if (bodyOffset + bodyLength == text.length() &&
-                        text.substring(bodyOffset - 1, bodyOffset).equals("\n")) {
+                           text.substring(bodyOffset - 1, bodyOffset).equals("\n")) {
                     // bottom-posting: ignore newline at end of quote
                     quotedText.append(text.substring(0, bodyOffset - 1));
                 } else {
@@ -2499,8 +2497,8 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private void populateUIWithQuotedMessage(boolean shown) throws MessagingException {
         if (mMessageFormat == MessageFormat.AUTO) {
             mMessageFormat = MimeUtility.findFirstPartByMimeType(mSourceMessage, "text/html") == null
-                    ? MessageFormat.TEXT
-                    : MessageFormat.HTML;
+                             ? MessageFormat.TEXT
+                             : MessageFormat.HTML;
         }
 
         // TODO -- I am assuming that mSourceMessageBody will always be a text part.  Is this a safe assumption?
@@ -2522,15 +2520,15 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                     List<Integer> start = new ArrayList<Integer>();
                     List<Integer> end = new ArrayList<Integer>();
 
-                    while(blockquoteStart.find()) {
+                    while (blockquoteStart.find()) {
                         start.add(blockquoteStart.start());
                     }
-                    while(blockquoteEnd.find()) {
+                    while (blockquoteEnd.find()) {
                         end.add(blockquoteEnd.start());
                     }
                     if (start.size() != end.size()) {
-                        Log.d(K9.LOG_TAG, "There are " + start.size() + " <blockquote> tags, but " + 
-                                end.size() + " </blockquote> tags. Refusing to strip.");
+                        Log.d(K9.LOG_TAG, "There are " + start.size() + " <blockquote> tags, but " +
+                              end.size() + " </blockquote> tags. Refusing to strip.");
                     } else if (start.size() > 0) {
                         // Ignore quoted signatures in blockquotes.
                         dashSignatureHtml.region(0, start.get(0));
@@ -2540,8 +2538,8 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                         } else {
                             for (int i = 0; i < start.size() - 1; i++) {
                                 // within blockquotes.
-                                if (end.get(i) < start.get(i+1)) {
-                                    dashSignatureHtml.region(end.get(i), start.get(i+1));
+                                if (end.get(i) < start.get(i + 1)) {
+                                    dashSignatureHtml.region(end.get(i), start.get(i + 1));
                                     if (dashSignatureHtml.find()) {
                                         content = content.substring(0, dashSignatureHtml.start());
                                         break;
@@ -2562,7 +2560,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                     }
                 }
 
-                // Fix the stripping off of closing tags if a signature was stripped, 
+                // Fix the stripping off of closing tags if a signature was stripped,
                 // as well as clean up the HTML of the quoted message.
                 HtmlCleaner cleaner = new HtmlCleaner();
                 CleanerProperties properties = cleaner.getProperties();
@@ -2589,7 +2587,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
             // Load the message with the reply header.
             mQuotedHTML.loadDataWithBaseURL("http://", mQuotedHtmlContent.getQuotedContent(), "text/html", "utf-8", null);
             mQuotedText.setText(quoteOriginalTextMessage(mSourceMessage,
-                    getBodyTextFromMessage(mSourceMessage, MessageFormat.TEXT), mQuoteStyle));
+                                getBodyTextFromMessage(mSourceMessage, MessageFormat.TEXT), mQuoteStyle));
 
         } else if (mMessageFormat == MessageFormat.TEXT) {
             if (mAccount.isStripSignature() && (ACTION_REPLY_ALL.equals(getIntent().getAction()) ||
