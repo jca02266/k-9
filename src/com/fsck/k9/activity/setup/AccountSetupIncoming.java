@@ -22,6 +22,7 @@ import com.fsck.k9.mail.Store;
 import com.fsck.k9.mail.store.ImapStore;
 import com.fsck.k9.mail.store.Pop3Store;
 import com.fsck.k9.mail.store.WebDavStore;
+import com.fsck.k9.mail.store.EasStore;
 import com.fsck.k9.mail.store.ImapStore.ImapStoreSettings;
 import com.fsck.k9.mail.store.WebDavStore.WebDavStoreSettings;
 
@@ -56,11 +57,8 @@ public class AccountSetupIncoming extends K9Activity implements OnClickListener 
         ConnectionSecurity.STARTTLS_REQUIRED
     };
 
-    private static final int easPorts[] = {
+    private static final int[] EAS_PORTS = {
         80, 443, 443, 443, 443
-    };
-    private static final String easSchemes[] = {
-        "eas", "eas+ssl", "eas+ssl+", "eas+tls", "eas+tls+"
     };
 
     private static final String[] AUTH_TYPES = {
@@ -297,10 +295,9 @@ public class AccountSetupIncoming extends K9Activity implements OnClickListener 
                     mWebdavMailboxPathView.setText(webDavSettings.mailboxPath);
                 }
                 mAccount.setDeletePolicy(Account.DELETE_POLICY_ON_DELETE);
-            } else if (uri.getScheme().startsWith("eas")) {
+            } else if (EasStore.STORE_TYPE.equals(settings.type)) {
                 serverLabelView.setText(R.string.account_setup_incoming_eas_server_label);
-                mAccountPorts = easPorts;
-                mAccountSchemes = easSchemes;
+                mAccountPorts = EAS_PORTS;
                 findViewById(R.id.imap_path_prefix_section).setVisibility(View.GONE);
                 findViewById(R.id.webdav_advanced_header).setVisibility(View.GONE);
                 findViewById(R.id.webdav_mailbox_alias_section).setVisibility(View.GONE);

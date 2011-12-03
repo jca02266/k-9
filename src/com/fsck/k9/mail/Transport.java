@@ -42,6 +42,8 @@ public abstract class Transport {
             return SmtpTransport.decodeUri(uri);
         } else if (uri.startsWith("webdav")) {
             return WebDavTransport.decodeUri(uri);
+        } else if (uri.startsWith("eas")) {
+            return EasTransport.decodeUri(uri);
         } else {
             throw new IllegalArgumentException("Not a valid transport URI");
         }
