@@ -242,9 +242,9 @@ public class WebDavStore extends Store {
             authPath = (authPath != null) ? authPath : "";
             String mailboxPath = extra.get(WebDavStoreSettings.MAILBOX_PATH_KEY);
             mailboxPath = (mailboxPath != null) ? mailboxPath : "";
-            uriPath = path + "|" + authPath + "|" + mailboxPath;
+            uriPath = "/" + path + "|" + authPath + "|" + mailboxPath;
         } else {
-            uriPath = "||";
+            uriPath = "/||";
         }
 
         try {
@@ -261,11 +261,11 @@ public class WebDavStore extends Store {
      *
      * @see WebDavStore#decodeUri(String)
      */
-    private static class WebDavStoreSettings extends ServerSettings {
-        private static final String ALIAS_KEY = "alias";
-        private static final String PATH_KEY = "path";
-        private static final String AUTH_PATH_KEY = "authPath";
-        private static final String MAILBOX_PATH_KEY = "mailboxPath";
+    public static class WebDavStoreSettings extends ServerSettings {
+        public static final String ALIAS_KEY = "alias";
+        public static final String PATH_KEY = "path";
+        public static final String AUTH_PATH_KEY = "authPath";
+        public static final String MAILBOX_PATH_KEY = "mailboxPath";
 
         public final String alias;
         public final String path;
