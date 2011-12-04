@@ -227,7 +227,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private boolean mDraftNeedsSaving = false;
     private boolean mPreventDraftSaving = false;
 
-    private int mIgnoreOnStop = 0;
+    private boolean mIgnoreOnStop = false;
 
     /**
      * The draft uid of this message. This is used when saving drafts so that the same draft is
@@ -842,8 +842,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     @Override
     public void onResume() {
         super.onResume();
-        mIgnoreOnStop--;
-        if (mIgnoreOnStop < 0) mIgnoreOnStop = 0;
+        mIgnoreOnStop = false;
         MessagingController.getInstance(getApplication()).addListener(mListener);
     }
 
@@ -855,7 +854,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         // don't do this if only changing orientations
         if ((getChangingConfigurations() & ActivityInfo.CONFIG_ORIENTATION) == 0) {
             // don't do this if selecting signature or if "Encrypt" is checked or if adding an attachment
-            if (!mPreventDraftSaving && !mEncryptCheckbox.isChecked() && mIgnoreOnStop == 0) {
+            if (!mPreventDraftSaving && !mEncryptCheckbox.isChecked() && !mIgnoreOnStop){
                 saveIfNeeded();
                 finish();
             }
@@ -1634,7 +1633,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType(mime_type);
-        mIgnoreOnStop = 1;
+        mIgnoreOnStop = true;
         startActivityForResult(Intent.createChooser(i, null), ACTIVITY_REQUEST_PICK_ATTACHMENT);
     }
 
@@ -1744,7 +1743,6 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                 Intent i = new Intent(this, EmailAddressList.class);
                 i.putExtra("contact", contact);
 
-                mIgnoreOnStop++;
                 if (requestCode == CONTACT_PICKER_TO) {
                     startActivityForResult(i, CONTACT_PICKER_TO2);
                 } else if (requestCode == CONTACT_PICKER_CC) {
@@ -1793,7 +1791,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     }
 
     public void doLaunchContactPicker(int resultId) {
-        mIgnoreOnStop = 1;
+        mIgnoreOnStop = true;
         startActivityForResult(mContacts.contactPickerIntent(), resultId);
     }
 
@@ -1988,7 +1986,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private void onChooseIdentity() {
         // keep things simple: trigger account choice only if there are more
         // than 1 account
-        mIgnoreOnStop = 1;
+        mIgnoreOnStop = true;
         if (Preferences.getPreferences(this).getAvailableAccounts().size() > 1) {
             final Intent intent = new Intent(this, ChooseAccount.class);
             intent.putExtra(ChooseAccount.EXTRA_ACCOUNT, mAccount.getUuid());
