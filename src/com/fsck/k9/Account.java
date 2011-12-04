@@ -59,13 +59,23 @@ public class Account implements BaseAccount {
     public static final String TYPE_OTHER = "OTHER";
     private static final String[] networkTypes = { TYPE_WIFI, TYPE_MOBILE, TYPE_OTHER };
 
-    private static final MessageFormat DEFAULT_MESSAGE_FORMAT = MessageFormat.HTML;
-    private static final boolean DEFAULT_MESSAGE_READ_RECEIPT = false;
-    private static final QuoteStyle DEFAULT_QUOTE_STYLE = QuoteStyle.PREFIX;
-    private static final String DEFAULT_QUOTE_PREFIX = ">";
-    private static final boolean DEFAULT_QUOTED_TEXT_SHOWN = true;
-    private static final boolean DEFAULT_REPLY_AFTER_QUOTE = false;
-    private static final boolean DEFAULT_SYNC_DRAFT_MESSAGE = true;
+    public static final MessageFormat DEFAULT_MESSAGE_FORMAT = MessageFormat.HTML;
+    public static final boolean DEFAULT_MESSAGE_FORMAT_AUTO = false;
+    public static final boolean DEFAULT_MESSAGE_READ_RECEIPT = false;
+    public static final QuoteStyle DEFAULT_QUOTE_STYLE = QuoteStyle.PREFIX;
+    public static final String DEFAULT_QUOTE_PREFIX = ">";
+    public static final boolean DEFAULT_QUOTED_TEXT_SHOWN = true;
+    public static final boolean DEFAULT_REPLY_AFTER_QUOTE = false;
+    public static final boolean DEFAULT_STRIP_SIGNATURE = true;
+
+    public static final String ACCOUNT_DESCRIPTION_KEY = "description";
+    public static final String STORE_URI_KEY = "storeUri";
+    public static final String TRANSPORT_URI_KEY = "transportUri";
+
+    public static final String IDENTITY_NAME_KEY = "name";
+    public static final String IDENTITY_EMAIL_KEY = "email";
+    public static final String IDENTITY_DESCRIPTION_KEY = "description";
+
 
     /**
      * <pre>
@@ -129,17 +139,30 @@ public class Account implements BaseAccount {
     // current set of fetched messages
     private boolean mRingNotified;
     private MessageFormat mMessageFormat;
+    private boolean mMessageFormatAuto;
     private boolean mMessageReadReceipt;
     private QuoteStyle mQuoteStyle;
     private String mQuotePrefix;
     private boolean mDefaultQuotedTextShown;
     private boolean mReplyAfterQuote;
+    private boolean mStripSignature;
     private boolean mSyncRemoteDeletions;
     private boolean mSyncDraftMessage;
     private String mCryptoApp;
     private boolean mCryptoAutoSignature;
+    private boolean mCryptoAutoEncrypt;
 
     private CryptoProvider mCryptoProvider = null;
+
+    /**
+     * Indicates whether this account is enabled, i.e. ready for use, or not.
+     *
+     * <p>
+     * Right now newly imported accounts are disabled if the settings file didn't contain a
+     * password for the incoming and/or outgoing server.
+     * </p>
+     */
+    private boolean mEnabled;
 
     /**
      * Name of the folder that was last selected for a copy or move operation.
@@ -174,7 +197,7 @@ public class Account implements BaseAccount {
     }
 
     public enum MessageFormat {
-        TEXT, HTML
+        TEXT, HTML, AUTO
     }
 
     protected Account(Context context) {
@@ -209,15 +232,19 @@ public class Account implements BaseAccount {
         maximumPolledMessageAge = -1;
         maximumAutoDownloadMessageSize = 32768;
         mMessageFormat = DEFAULT_MESSAGE_FORMAT;
+        mMessageFormatAuto = DEFAULT_MESSAGE_FORMAT_AUTO;
         mMessageReadReceipt = DEFAULT_MESSAGE_READ_RECEIPT;
         mQuoteStyle = DEFAULT_QUOTE_STYLE;
         mQuotePrefix = DEFAULT_QUOTE_PREFIX;
         mDefaultQuotedTextShown = DEFAULT_QUOTED_TEXT_SHOWN;
         mReplyAfterQuote = DEFAULT_REPLY_AFTER_QUOTE;
+        mStripSignature = DEFAULT_STRIP_SIGNATURE;
         mSyncRemoteDeletions = true;
         mSyncDraftMessage = false;
         mCryptoApp = Apg.NAME;
         mCryptoAutoSignature = false;
+        mCryptoAutoEncrypt = false;
+        mEnabled = true;
 
         searchableFolders = Searchable.ALL;
 
@@ -286,11 +313,16 @@ public class Account implements BaseAccount {
         maximumPolledMessageAge = prefs.getInt(mUuid + ".maximumPolledMessageAge", -1);
         maximumAutoDownloadMessageSize = prefs.getInt(mUuid + ".maximumAutoDownloadMessageSize", 32768);
         mMessageFormat = MessageFormat.valueOf(prefs.getString(mUuid + ".messageFormat", DEFAULT_MESSAGE_FORMAT.name()));
+        mMessageFormatAuto = prefs.getBoolean(mUuid + ".messageFormatAuto", DEFAULT_MESSAGE_FORMAT_AUTO);
+        if (mMessageFormatAuto && mMessageFormat == MessageFormat.TEXT) {
+            mMessageFormat = MessageFormat.AUTO;
+        }
         mMessageReadReceipt = prefs.getBoolean(mUuid + ".messageReadReceipt", DEFAULT_MESSAGE_READ_RECEIPT);
         mQuoteStyle = QuoteStyle.valueOf(prefs.getString(mUuid + ".quoteStyle", DEFAULT_QUOTE_STYLE.name()));
         mQuotePrefix = prefs.getString(mUuid + ".quotePrefix", DEFAULT_QUOTE_PREFIX);
         mDefaultQuotedTextShown = prefs.getBoolean(mUuid + ".defaultQuotedTextShown", DEFAULT_QUOTED_TEXT_SHOWN);
         mReplyAfterQuote = prefs.getBoolean(mUuid + ".replyAfterQuote", DEFAULT_REPLY_AFTER_QUOTE);
+        mStripSignature = prefs.getBoolean(mUuid + ".stripSignature", DEFAULT_STRIP_SIGNATURE);
         for (String type : networkTypes) {
             Boolean useCompression = prefs.getBoolean(mUuid + ".useCompression." + type,
                                      true);
@@ -381,20 +413,10 @@ public class Account implements BaseAccount {
 
         mCryptoApp = prefs.getString(mUuid + ".cryptoApp", Apg.NAME);
         mCryptoAutoSignature = prefs.getBoolean(mUuid + ".cryptoAutoSignature", false);
+        mCryptoAutoEncrypt = prefs.getBoolean(mUuid + ".cryptoAutoEncrypt", false);
+        mEnabled = prefs.getBoolean(mUuid + ".enabled", true);
     }
-    
-    private String combineUuids(String[] uuids) {
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0, length = uuids.length; i < length; i++) {
-            if (sb.length() > 0) {
-                sb.append(',');
-            }
-            sb.append(uuids[i]);
-        }
-        String accountUuids = sb.toString();
-        return accountUuids;
-    }
-    
+
     protected synchronized void delete(Preferences preferences) {
         String[] uuids = preferences.getPreferences().getString("accountUuids", "").split(",");
         String[] newUuids = new String[uuids.length - 1];
@@ -404,8 +426,8 @@ public class Account implements BaseAccount {
                 newUuids[i++] = uuid;
             }
         }
-        
-        String accountUuids = combineUuids(newUuids);
+
+        String accountUuids = Utility.combine(newUuids, ',');
         SharedPreferences.Editor editor = preferences.getPreferences().edit();
         editor.putString("accountUuids", accountUuids);
 
@@ -458,12 +480,16 @@ public class Account implements BaseAccount {
         editor.remove(mUuid + ".subscribedFoldersOnly");
         editor.remove(mUuid + ".maximumPolledMessageAge");
         editor.remove(mUuid + ".maximumAutoDownloadMessageSize");
+        editor.remove(mUuid + ".messageFormatAuto");
         editor.remove(mUuid + ".quoteStyle");
         editor.remove(mUuid + ".quotePrefix");
         editor.remove(mUuid + ".showPicturesEnum");
         editor.remove(mUuid + ".replyAfterQuote");
+        editor.remove(mUuid + ".stripSignature");
         editor.remove(mUuid + ".cryptoApp");
         editor.remove(mUuid + ".cryptoAutoSignature");
+        editor.remove(mUuid + ".cryptoAutoEncrypt");
+        editor.remove(mUuid + ".enabled");
         editor.remove(mUuid + ".enableMoveButtons");
         editor.remove(mUuid + ".hideMoveButtonsEnum");
         for (String type : networkTypes) {
@@ -498,7 +524,7 @@ public class Account implements BaseAccount {
         List<Integer> accountNumbers = getExistingAccountNumbers(preferences);
         return findNewAccountNumber(accountNumbers);
     }
-    
+
     public void move(Preferences preferences, boolean moveUp) {
         String[] uuids = preferences.getPreferences().getString("accountUuids", "").split(",");
         SharedPreferences.Editor editor = preferences.getPreferences().edit();
@@ -507,7 +533,7 @@ public class Account implements BaseAccount {
             for (int i = 0; i < uuids.length; i++) {
                 if (i > 0 && uuids[i].equals(mUuid)) {
                     newUuids[i] = newUuids[i-1];
-                    newUuids[i-1] = mUuid;   
+                    newUuids[i-1] = mUuid;
                 }
                 else {
                     newUuids[i] = uuids[i];
@@ -518,19 +544,19 @@ public class Account implements BaseAccount {
             for (int i = uuids.length - 1; i >= 0; i--) {
                 if (i < uuids.length - 1 && uuids[i].equals(mUuid)) {
                     newUuids[i] = newUuids[i+1];
-                    newUuids[i+1] = mUuid;   
+                    newUuids[i+1] = mUuid;
                 }
                 else {
                     newUuids[i] = uuids[i];
                 }
             }
         }
-        String accountUuids = combineUuids(newUuids);
+        String accountUuids = Utility.combine(newUuids, ',');
         editor.putString("accountUuids", accountUuids);
         editor.commit();
-        preferences.refreshAccounts();
+        preferences.loadAccounts();
     }
-    
+
     public synchronized void save(Preferences preferences) {
         SharedPreferences.Editor editor = preferences.getPreferences().edit();
 
@@ -609,14 +635,26 @@ public class Account implements BaseAccount {
         editor.putBoolean(mUuid + ".subscribedFoldersOnly", subscribedFoldersOnly);
         editor.putInt(mUuid + ".maximumPolledMessageAge", maximumPolledMessageAge);
         editor.putInt(mUuid + ".maximumAutoDownloadMessageSize", maximumAutoDownloadMessageSize);
-        editor.putString(mUuid + ".messageFormat", mMessageFormat.name());
+        if (MessageFormat.AUTO.equals(mMessageFormat)) {
+            // saving MessageFormat.AUTO as is to the database will cause downgrades to crash on
+            // startup, so we save as MessageFormat.TEXT instead with a separate flag for auto.
+            editor.putString(mUuid + ".messageFormat", Account.MessageFormat.TEXT.name());
+            mMessageFormatAuto = true;
+        } else {
+            editor.putString(mUuid + ".messageFormat", mMessageFormat.name());
+            mMessageFormatAuto = false;
+        }
+        editor.putBoolean(mUuid + ".messageFormatAuto", mMessageFormatAuto);
         editor.putBoolean(mUuid + ".messageReadReceipt", mMessageReadReceipt);
         editor.putString(mUuid + ".quoteStyle", mQuoteStyle.name());
         editor.putString(mUuid + ".quotePrefix", mQuotePrefix);
         editor.putBoolean(mUuid + ".defaultQuotedTextShown", mDefaultQuotedTextShown);
         editor.putBoolean(mUuid + ".replyAfterQuote", mReplyAfterQuote);
+        editor.putBoolean(mUuid + ".stripSignature", mStripSignature);
         editor.putString(mUuid + ".cryptoApp", mCryptoApp);
         editor.putBoolean(mUuid + ".cryptoAutoSignature", mCryptoAutoSignature);
+        editor.putBoolean(mUuid + ".cryptoAutoEncrypt", mCryptoAutoEncrypt);
+        editor.putBoolean(mUuid + ".enabled", mEnabled);
 
         editor.putBoolean(mUuid + ".vibrate", mNotificationSetting.shouldVibrate());
         editor.putInt(mUuid + ".vibratePattern", mNotificationSetting.getVibratePattern());
@@ -1060,7 +1098,7 @@ public class Account implements BaseAccount {
     }
 
     // It'd be great if this actually went into the store implementation
-    // to get this, but that's expensive and not easilly accessible
+    // to get this, but that's expensive and not easily accessible
     // during initialization
     public boolean isSearchByDateCapable() {
         if (getStoreUri().startsWith("imap")) {
@@ -1115,18 +1153,17 @@ public class Account implements BaseAccount {
         return mUuid.hashCode();
     }
 
-
     private synchronized List<Identity> loadIdentities(SharedPreferences prefs) {
         List<Identity> newIdentities = new ArrayList<Identity>();
         int ident = 0;
         boolean gotOne = false;
         do {
             gotOne = false;
-            String name = prefs.getString(mUuid + ".name." + ident, null);
-            String email = prefs.getString(mUuid + ".email." + ident, null);
+            String name = prefs.getString(mUuid + "." + IDENTITY_NAME_KEY + "." + ident, null);
+            String email = prefs.getString(mUuid + "." + IDENTITY_EMAIL_KEY + "." + ident, null);
             boolean signatureUse = prefs.getBoolean(mUuid  + ".signatureUse." + ident, true);
             String signature = prefs.getString(mUuid + ".signature." + ident, null);
-            String description = prefs.getString(mUuid + ".description." + ident, null);
+            String description = prefs.getString(mUuid + "." + IDENTITY_DESCRIPTION_KEY + "." + ident, null);
             final String replyTo = prefs.getString(mUuid + ".replyTo." + ident, null);
             if (email != null) {
                 Identity identity = new Identity();
@@ -1142,7 +1179,7 @@ public class Account implements BaseAccount {
             ident++;
         } while (gotOne);
 
-        if (newIdentities.size() == 0) {
+        if (newIdentities.isEmpty()) {
             String name = prefs.getString(mUuid + ".name", null);
             String email = prefs.getString(mUuid + ".email", null);
             boolean signatureUse = prefs.getBoolean(mUuid  + ".signatureUse", true);
@@ -1164,13 +1201,13 @@ public class Account implements BaseAccount {
         boolean gotOne = false;
         do {
             gotOne = false;
-            String email = prefs.getString(mUuid + ".email." + ident, null);
+            String email = prefs.getString(mUuid + "." + IDENTITY_EMAIL_KEY + "." + ident, null);
             if (email != null) {
-                editor.remove(mUuid + ".name." + ident);
-                editor.remove(mUuid + ".email." + ident);
+                editor.remove(mUuid + "." + IDENTITY_NAME_KEY + "." + ident);
+                editor.remove(mUuid + "." + IDENTITY_EMAIL_KEY + "." + ident);
                 editor.remove(mUuid + ".signatureUse." + ident);
                 editor.remove(mUuid + ".signature." + ident);
-                editor.remove(mUuid + ".description." + ident);
+                editor.remove(mUuid + "." + IDENTITY_DESCRIPTION_KEY + "." + ident);
                 editor.remove(mUuid + ".replyTo." + ident);
                 gotOne = true;
             }
@@ -1183,11 +1220,11 @@ public class Account implements BaseAccount {
         int ident = 0;
 
         for (Identity identity : identities) {
-            editor.putString(mUuid + ".name." + ident, identity.getName());
-            editor.putString(mUuid + ".email." + ident, identity.getEmail());
+            editor.putString(mUuid + "." + IDENTITY_NAME_KEY + "." + ident, identity.getName());
+            editor.putString(mUuid + "." + IDENTITY_EMAIL_KEY + "." + ident, identity.getEmail());
             editor.putBoolean(mUuid + ".signatureUse." + ident, identity.getSignatureUse());
             editor.putString(mUuid + ".signature." + ident, identity.getSignature());
-            editor.putString(mUuid + ".description." + ident, identity.getDescription());
+            editor.putString(mUuid + "." + IDENTITY_DESCRIPTION_KEY + "." + ident, identity.getDescription());
             editor.putString(mUuid + ".replyTo." + ident, identity.getReplyTo());
             ident++;
         }
@@ -1406,6 +1443,14 @@ public class Account implements BaseAccount {
         mReplyAfterQuote = replyAfterQuote;
     }
 
+    public synchronized boolean isStripSignature() {
+        return mStripSignature;
+    }
+
+    public synchronized void setStripSignature(boolean stripSignature) {
+        mStripSignature = stripSignature;
+    }
+
     public boolean getEnableMoveButtons() {
         return mEnableMoveButtons;
     }
@@ -1430,6 +1475,14 @@ public class Account implements BaseAccount {
 
     public void setCryptoAutoSignature(boolean cryptoAutoSignature) {
         mCryptoAutoSignature = cryptoAutoSignature;
+    }
+
+    public boolean isCryptoAutoEncrypt() {
+        return mCryptoAutoEncrypt;
+    }
+
+    public void setCryptoAutoEncrypt(boolean cryptoAutoEncrypt) {
+        mCryptoAutoEncrypt = cryptoAutoEncrypt;
     }
 
     public String getInboxFolderName() {
@@ -1487,4 +1540,11 @@ public class Account implements BaseAccount {
         return StorageManager.getInstance(K9.app).isReady(localStorageProviderId);
     }
 
+    public synchronized boolean isEnabled() {
+        return mEnabled;
+    }
+
+    public synchronized void setEnabled(boolean enabled) {
+        mEnabled = enabled;
+    }
 }
