@@ -94,6 +94,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private static final String PREFERENCE_REPLY_AFTER_QUOTE = "reply_after_quote";
     private static final String PREFERENCE_STRIP_SIGNATURE = "strip_signature";
     private static final String PREFERENCE_SYNC_REMOTE_DELETIONS = "account_sync_remote_deletetions";
+    private static final String PREFERENCE_SYNC_DRAFT_MESSAGE = "sync_draft_message";
     private static final String PREFERENCE_CRYPTO_APP = "crypto_app";
     private static final String PREFERENCE_CRYPTO_AUTO_SIGNATURE = "crypto_auto_signature";
     private static final String PREFERENCE_CRYPTO_AUTO_ENCRYPT = "crypto_auto_encrypt";
@@ -155,6 +156,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private CheckBoxPreference mReplyAfterQuote;
     private CheckBoxPreference mStripSignature;
     private CheckBoxPreference mSyncRemoteDeletions;
+    private CheckBoxPreference mSyncDraftMessage;
     private CheckBoxPreference mSaveAllHeaders;
     private CheckBoxPreference mPushPollOnConnect;
     private ListPreference mIdleRefreshPeriod;
@@ -360,6 +362,9 @@ public class AccountSettings extends K9PreferenceActivity {
 
         mSyncRemoteDeletions = (CheckBoxPreference) findPreference(PREFERENCE_SYNC_REMOTE_DELETIONS);
         mSyncRemoteDeletions.setChecked(mAccount.syncRemoteDeletions());
+
+        mSyncDraftMessage = (CheckBoxPreference) findPreference(PREFERENCE_SYNC_DRAFT_MESSAGE);
+        mSyncDraftMessage.setChecked(mAccount.getSyncDraftMessage());
 
         mSaveAllHeaders = (CheckBoxPreference) findPreference(PREFERENCE_SAVE_ALL_HEADERS);
         mSaveAllHeaders.setChecked(mAccount.saveAllHeaders());
@@ -729,6 +734,7 @@ public class AccountSettings extends K9PreferenceActivity {
             mAccount.setExpungePolicy(mExpungePolicy.getValue());
         };
         mAccount.setSyncRemoteDeletions(mSyncRemoteDeletions.isChecked());
+        mAccount.setSyncDraftMessage(mSyncDraftMessage.isChecked());
         mAccount.setSaveAllHeaders(mSaveAllHeaders.isChecked());
         mAccount.setSearchableFolders(Account.Searchable.valueOf(mSearchableFolders.getValue()));
         mAccount.setMessageFormat(Account.MessageFormat.valueOf(mMessageFormat.getValue()));
