@@ -227,8 +227,6 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private boolean mDraftNeedsSaving = false;
     private boolean mPreventDraftSaving = false;
 
-    private boolean mIgnoreOnStop = false;
-
     /**
      * The draft uid of this message. This is used when saving drafts so that the same draft is
      * overwritten instead of being created anew. This property is null until the first save.
@@ -841,7 +839,6 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     @Override
     public void onResume() {
         super.onResume();
-        mIgnoreOnStop = false;
         MessagingController.getInstance(getApplication()).addListener(mListener);
     }
 
@@ -857,8 +854,8 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         super.onStop();
         // don't do this if only changing orientations
         if ((getChangingConfigurations() & ActivityInfo.CONFIG_ORIENTATION) == 0) {
-            // don't do this if selecting signature or if "Encrypt" is checked or if adding an attachment
-            if (!mPreventDraftSaving && !mEncryptCheckbox.isChecked() && !mIgnoreOnStop) {
+            // don't do this if selecting signature or if "Encrypt" is checked
+            if (!mPreventDraftSaving && !mEncryptCheckbox.isChecked()){
                 saveIfNeeded();
                 finish();
             }
@@ -1612,7 +1609,6 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
      * Kick off a picker for whatever kind of MIME types we'll accept and let Android take over.
      */
     private void onAddAttachment() {
-        mIgnoreOnStop = true;
         if (K9.isGalleryBuggy()) {
             if (K9.useGalleryBugWorkaround()) {
                 Toast.makeText(MessageCompose.this,
@@ -2959,6 +2955,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private class SaveMessageTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
+
             /*
              * Create the message from all the data the user has entered.
              */
