@@ -51,6 +51,7 @@ import com.fsck.k9.controller.MessageRetrievalListener;
 import com.fsck.k9.helper.power.TracingPowerManager;
 import com.fsck.k9.helper.power.TracingPowerManager.TracingWakeLock;
 import com.fsck.k9.mail.AuthenticationFailedException;
+import com.fsck.k9.mail.ConnectionSecurity;
 import com.fsck.k9.mail.FetchProfile;
 import com.fsck.k9.mail.Flag;
 import com.fsck.k9.mail.Folder;
@@ -58,6 +59,7 @@ import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.PushReceiver;
 import com.fsck.k9.mail.Pusher;
+import com.fsck.k9.mail.ServerSettings;
 import com.fsck.k9.mail.Store;
 import com.fsck.k9.mail.filter.EOLConvertingOutputStream;
 import com.fsck.k9.mail.internet.MimeMessage;
@@ -72,6 +74,8 @@ import com.fsck.k9.mail.store.exchange.adapter.Tags;
 import com.fsck.k9.mail.transport.TrustedSocketFactory;
 
 public class EasStore extends Store {
+    public static final String STORE_TYPE = "EAS";
+
     // Security options
     private static final short CONNECTION_SECURITY_NONE = 0;
     private static final short CONNECTION_SECURITY_TLS_OPTIONAL = 1;
@@ -115,6 +119,135 @@ public class EasStore extends Store {
     private static final int MAX_DELAY_TIME = 5 * 60 * 1000; // 5 minutes
     private static final int NORMAL_DELAY_TIME = 5000;
 
+    /**
+     * Decodes a EasStore URI.
+     *
+     * <p>Possible forms:</p>
+     * <pre>
+     * eas://user:password@server:port CONNECTION_SECURITY_NONE
+     * eas+tls://user:password@server:port CONNECTION_SECURITY_TLS_OPTIONAL
+     * eas+tls+://user:password@server:port CONNECTION_SECURITY_TLS_REQUIRED
+     * eas+ssl+://user:password@server:port CONNECTION_SECURITY_SSL_REQUIRED
+     * eas+ssl://user:password@server:port CONNECTION_SECURITY_SSL_OPTIONAL
+     * </pre>
+     */
+    public static ServerSettings decodeUri(String uri) {
+        String host;
+        int port;
+        ConnectionSecurity connectionSecurity;
+        String username = null;
+        String password = null;
+
+
+        URI easUri;
+        try {
+            easUri = new URI(uri);
+        } catch (URISyntaxException use) {
+            throw new IllegalArgumentException("Invalid EasStore URI", use);
+        }
+
+        String scheme = easUri.getScheme();
+        if (scheme.equals("eas")) {
+            connectionSecurity = ConnectionSecurity.NONE;
+            port = 80;
+        } else if (scheme.equals("eas+ssl")) {
+            connectionSecurity = ConnectionSecurity.SSL_TLS_OPTIONAL;
+            port = 443;
+        } else if (scheme.equals("eas+ssl+")) {
+            connectionSecurity = ConnectionSecurity.SSL_TLS_REQUIRED;
+            port = 443;
+        } else if (scheme.equals("eas+tls")) {
+            connectionSecurity = ConnectionSecurity.STARTTLS_OPTIONAL;
+            port = 443;
+        } else if (scheme.equals("eas+tls+")) {
+            connectionSecurity = ConnectionSecurity.STARTTLS_REQUIRED;
+            port = 443;
+        } else {
+            throw new IllegalArgumentException("Unsupported protocol (" + scheme + ")");
+        }
+
+        host = easUri.getHost();
+        if (host.startsWith("http")) {
+            String[] hostParts = host.split("://", 2);
+            if (hostParts.length > 1) {
+                host = hostParts[1];
+            }
+        }
+
+        if (easUri.getPort() != -1) {
+            port = easUri.getPort();
+        }
+
+        String userInfo = easUri.getUserInfo();
+        if (userInfo != null) {
+            try {
+                String[] userInfoParts = userInfo.split(":");
+                username = URLDecoder.decode(userInfoParts[0], "UTF-8");
+
+                if (userInfoParts.length > 1) {
+                    password = URLDecoder.decode(userInfoParts[1], "UTF-8");
+                }
+            } catch (UnsupportedEncodingException enc) {
+                // This shouldn't happen since the encoding is hardcoded to UTF-8
+                throw new IllegalArgumentException("Couldn't urldecode username or password.", enc);
+            }
+        }
+
+        return new ServerSettings(STORE_TYPE, host, port, connectionSecurity, null, username, password);
+    }
+
+    /**
+     * Creates a EasStore URI with the supplied settings.
+     *
+     * @param server
+     *         The {@link ServerSettings} object that holds the server settings.
+     *
+     * @return A EasStore URI that holds the same information as the {@code server} parameter.
+     *
+     * @see Account#getStoreUri()
+     * @see EasStore#decodeUri(String)
+     */
+    public static String createUri(ServerSettings server) {
+        String userEnc;
+        String passwordEnc;
+        try {
+            userEnc = URLEncoder.encode(server.username, "UTF-8");
+            passwordEnc = (server.password != null) ?
+                          URLEncoder.encode(server.password, "UTF-8") : "";
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Could not encode username or password", e);
+        }
+
+        String scheme;
+        switch (server.connectionSecurity) {
+        case SSL_TLS_OPTIONAL:
+            scheme = "eas+ssl";
+            break;
+        case SSL_TLS_REQUIRED:
+            scheme = "eas+ssl+";
+            break;
+        case STARTTLS_OPTIONAL:
+            scheme = "eas+tls";
+            break;
+        case STARTTLS_REQUIRED:
+            scheme = "eas+tls+";
+            break;
+        default:
+        case NONE:
+            scheme = "eas";
+            break;
+        }
+
+        String userInfo = userEnc + ":" + passwordEnc;
+
+        try {
+            return new URI(scheme, userInfo, server.host, server.port, null,
+                           null, null).toString();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Can't create EasStore URI", e);
+        }
+    }
+
     // Reasonable default
     public String mProtocolVersion;
     public Double mProtocolVersionDouble;
@@ -122,8 +255,8 @@ public class EasStore extends Store {
     protected String mDeviceType = "Android";
     private String mCmdString = null;
 
-    private final URI mUri; /* Stores the Uniform Resource Indicator with all connection info */
     private String mHost; /* Stores the host name for the server */
+    private int mPort;
     private String mUsername; /* Stores the username for authentications */
     private String mPassword; /* Stores the password for authentications */
 
@@ -144,50 +277,36 @@ public class EasStore extends Store {
     public EasStore(Account account) throws MessagingException {
         super(account);
 
+        ServerSettings settings;
         try {
-            mUri = new URI(mAccount.getStoreUri());
-        } catch (URISyntaxException use) {
-            throw new MessagingException("Invalid WebDavStore URI", use);
+            settings = decodeUri(mAccount.getStoreUri());
+        } catch (IllegalArgumentException e) {
+            throw new MessagingException("Error while decoding store URI", e);
         }
 
-        String scheme = mUri.getScheme();
-        if (scheme.equals("eas")) {
+        mHost = settings.host;
+        mPort = settings.port;
+
+        switch (settings.connectionSecurity) {
+        case NONE:
             mConnectionSecurity = CONNECTION_SECURITY_NONE;
-        } else if (scheme.equals("eas+ssl")) {
-            mConnectionSecurity = CONNECTION_SECURITY_SSL_OPTIONAL;
-        } else if (scheme.equals("eas+ssl+")) {
-            mConnectionSecurity = CONNECTION_SECURITY_SSL_REQUIRED;
-        } else if (scheme.equals("eas+tls")) {
+            break;
+        case STARTTLS_OPTIONAL:
             mConnectionSecurity = CONNECTION_SECURITY_TLS_OPTIONAL;
-        } else if (scheme.equals("eas+tls+")) {
+            break;
+        case STARTTLS_REQUIRED:
             mConnectionSecurity = CONNECTION_SECURITY_TLS_REQUIRED;
-        } else {
-            throw new MessagingException("Unsupported protocol");
+            break;
+        case SSL_TLS_OPTIONAL:
+            mConnectionSecurity = CONNECTION_SECURITY_SSL_OPTIONAL;
+            break;
+        case SSL_TLS_REQUIRED:
+            mConnectionSecurity = CONNECTION_SECURITY_SSL_REQUIRED;
+            break;
         }
 
-        mHost = mUri.getHost();
-        if (mHost.startsWith("http")) {
-            String[] hostParts = mHost.split("://", 2);
-            if (hostParts.length > 1) {
-                mHost = hostParts[1];
-            }
-        }
-
-        if (mUri.getUserInfo() != null) {
-            try {
-                String[] userInfoParts = mUri.getUserInfo().split(":");
-
-                mUsername = URLDecoder.decode(userInfoParts[0], "UTF-8");
-
-                if (userInfoParts.length > 1) {
-                    mPassword = URLDecoder.decode(userInfoParts[1], "UTF-8");
-                }
-            } catch (UnsupportedEncodingException enc) {
-                // This shouldn't happen since the encoding is hardcoded to UTF-8
-                Log.e(K9.LOG_TAG, "Couldn't urldecode username or password.", enc);
-            }
-        }
-
+        mUsername = settings.username;
+        mPassword = settings.password;
         mSecure = mConnectionSecurity == CONNECTION_SECURITY_SSL_REQUIRED;
 
         setupHttpClient();
@@ -219,7 +338,7 @@ public class EasStore extends Store {
             mHost,
             mUsername,
             mPassword,
-            mUri.getPort(),
+            mPort,
             ssl,
             trustCertificates,
             K9.app);

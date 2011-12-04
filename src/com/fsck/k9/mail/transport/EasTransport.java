@@ -7,10 +7,36 @@ import com.fsck.k9.Account;
 import com.fsck.k9.K9;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
+import com.fsck.k9.mail.ServerSettings;
 import com.fsck.k9.mail.Transport;
 import com.fsck.k9.mail.store.EasStore;
 
 public class EasTransport extends Transport {
+    /**
+     * Decodes a EasTransport URI.
+     *
+     * <p>
+     * <b>Note:</b> Everything related to sending messages via EAS is handled by
+     * {@link EasStore}. So the transport URI is the same as the store URI.
+     * </p>
+     */
+    public static ServerSettings decodeUri(String uri) {
+        return EasStore.decodeUri(uri);
+    }
+
+    /**
+     * Creates a EasTransport URI.
+     *
+     * <p>
+     * <b>Note:</b> Everything related to sending messages via EAS is handled by
+     * {@link EasStore}. So the transport URI is the same as the store URI.
+     * </p>
+     */
+    public static String createUri(ServerSettings server) {
+        return EasStore.createUri(server);
+    }
+
+
     private EasStore store;
 
     public EasTransport(Account account) throws MessagingException {
