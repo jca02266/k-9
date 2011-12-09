@@ -2070,7 +2070,7 @@ public class MimeUtility {
                 return charset;
         }
 
-        return "UTF-8";
+        return null;
     }
 
     public static String getMimeTypeByExtension(String filename) {

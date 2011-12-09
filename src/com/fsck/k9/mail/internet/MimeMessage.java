@@ -53,6 +53,7 @@ public class MimeMessage extends Message {
 
     protected Body mBody;
     protected int mSize;
+    protected String mCharset;
 
     public MimeMessage() {
     }
@@ -357,8 +358,8 @@ public class MimeMessage extends Message {
             multipart.setParent(this);
             setHeader(MimeHeader.HEADER_CONTENT_TYPE, multipart.getContentType());
         } else if (body instanceof TextBody) {
-            setHeader(MimeHeader.HEADER_CONTENT_TYPE, String.format("%s;\n charset=utf-8",
-                      getMimeType()));
+            setHeader(MimeHeader.HEADER_CONTENT_TYPE, String.format("%s;\n charset=%s",
+                      getMimeType(), mCharset));
             setHeader(MimeHeader.HEADER_CONTENT_TRANSFER_ENCODING, "quoted-printable");
         }
     }
@@ -419,6 +420,8 @@ public class MimeMessage extends Message {
 
     @Override
     public void setCharset(String charset) throws MessagingException {
+        mCharset = charset;
+
         mHeader.setCharset(charset);
         if (mBody instanceof Multipart) {
             ((Multipart)mBody).setCharset(charset);
