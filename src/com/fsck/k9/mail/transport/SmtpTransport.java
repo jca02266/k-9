@@ -409,7 +409,7 @@ public class SmtpTransport extends Transport {
     }
 
     @Override
-    public void sendMessage(Message message) throws MessagingException {
+    public void sendMessage(Message message, String defaultCharset) throws MessagingException {
         ArrayList<Address> addresses = new ArrayList<Address>();
         {
             addresses.addAll(Arrays.asList(message.getRecipients(RecipientType.TO)));
@@ -423,6 +423,9 @@ public class SmtpTransport extends Transport {
         for (Address address : addresses) {
             String addressString = address.getAddress();
             String charset = MimeUtility.getCharsetFromAddress(addressString);
+            if (charset == null) {
+                charset = defaultCharset;
+            }
             ArrayList<String> addressesOfCharset = charsetAddressesMap.get(charset);
             if (addressesOfCharset == null) {
                 addressesOfCharset = new ArrayList<String>();

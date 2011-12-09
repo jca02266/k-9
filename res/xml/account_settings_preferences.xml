@@ -232,6 +232,14 @@
             android:entries="@array/account_settings_message_format_entries"
             android:entryValues="@array/account_settings_message_format_values" />
 
+        <ListPreference
+            android:persistent="false"
+            android:key="message_encoding"
+            android:title="@string/account_settings_message_encoding_label"
+            android:summary="@string/account_settings_message_encoding_summary"
+            android:entries="@array/account_settings_message_encoding_entries"
+            android:entryValues="@array/account_settings_message_encoding_entries" />
+
         <CheckBoxPreference
 	    android:persistent="false"
 	    android:key="message_read_receipt"
