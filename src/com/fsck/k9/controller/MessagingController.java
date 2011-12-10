@@ -3313,7 +3313,7 @@ public class MessagingController implements Runnable {
         });
     }
 
-    public void deleteDraft(final Account account, String uid) {
+    public void deleteDraft(final Account account, String uid, boolean moveToTrash) {
         LocalFolder localFolder = null;
         try {
             LocalStore localStore = account.getLocalStore();
@@ -3321,7 +3321,7 @@ public class MessagingController implements Runnable {
             localFolder.open(OpenMode.READ_WRITE);
             Message message = localFolder.getMessage(uid);
             if (message != null) {
-                deleteMessages(new Message[] { message }, null);
+                deleteMessages(new Message[] { message }, null, moveToTrash);
             }
         } catch (MessagingException me) {
             addErrorMessage(account, null, me);
@@ -3331,6 +3331,10 @@ public class MessagingController implements Runnable {
     }
 
     public void deleteMessages(final Message[] messages, final MessagingListener listener) {
+        deleteMessages(messages, listener, true);
+    }
+
+    public void deleteMessages(final Message[] messages, final MessagingListener listener, final boolean moveToTrash) {
         actOnMessages(messages, new MessageActor() {
 
             @Override
@@ -3343,7 +3347,7 @@ public class MessagingController implements Runnable {
                 putBackground("deleteMessages", null, new Runnable() {
                     @Override
                     public void run() {
-                        deleteMessagesSynchronous(account, folder.getName(), messages.toArray(EMPTY_MESSAGE_ARRAY), listener);
+                        deleteMessagesSynchronous(account, folder.getName(), messages.toArray(EMPTY_MESSAGE_ARRAY), listener, moveToTrash);
                     }
                 });
             }
@@ -3353,7 +3357,7 @@ public class MessagingController implements Runnable {
     }
 
     private void deleteMessagesSynchronous(final Account account, final String folder, final Message[] messages,
-                                           MessagingListener listener) {
+                                           MessagingListener listener, boolean moveToTrash) {
         Folder localFolder = null;
         Folder localTrashFolder = null;
         String[] uids = getUidsFromMessages(messages);
@@ -3367,7 +3371,9 @@ public class MessagingController implements Runnable {
             }
             Store localStore = account.getLocalStore();
             localFolder = localStore.getFolder(folder);
-            if (folder.equals(account.getTrashFolderName()) || K9.FOLDER_NONE.equals(account.getTrashFolderName())) {
+            if (!moveToTrash ||
+                folder.equals(account.getTrashFolderName()) ||
+                K9.FOLDER_NONE.equals(account.getTrashFolderName())) {
                 if (K9.DEBUG)
                     Log.d(K9.LOG_TAG, "Deleting messages in trash folder or trash set to -None-, not copying");
 
