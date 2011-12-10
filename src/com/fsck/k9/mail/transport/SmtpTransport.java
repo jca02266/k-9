@@ -469,6 +469,14 @@ public class SmtpTransport extends Transport {
             String charset = charsetAddressesMapEntry.getKey();
             ArrayList<String> addressesOfCharset = charsetAddressesMapEntry.getValue();
             message.setCharset(charset);
+
+            close();
+            open();
+
+            // the value of m8bitEncodingAllowed is set by open().
+            String encoding = MimeUtility.getContentTransferEncoding(charset, m8bitEncodingAllowed);
+            message.setEncoding(encoding);
+
             sendMessageTo(addressesOfCharset, message);
         }
     }
@@ -477,10 +485,6 @@ public class SmtpTransport extends Transport {
     throws MessagingException {
         boolean possibleSend = false;
 
-        close();
-        open();
-
-        message.setEncoding(m8bitEncodingAllowed ? "8bit" : null);
         // If the message has attachments and our server has told us about a limit on
         // the size of messages, count the message's size before sending it
         if (mLargestAcceptableMessage > 0 && ((LocalMessage)message).hasAttachments()) {
