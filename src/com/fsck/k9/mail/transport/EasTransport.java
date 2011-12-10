@@ -61,7 +61,7 @@ public class EasTransport extends Transport {
     }
 
     @Override
-    public void sendMessage(Message message) throws MessagingException {
+    public void sendMessage(Message message, String charset) throws MessagingException {
         store.sendMessages(new Message[] { message });
     }
 }
