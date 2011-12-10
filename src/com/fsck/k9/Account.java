@@ -154,6 +154,7 @@ public class Account implements BaseAccount {
     private String mSyncKey;
     private String mSecurityKey;
     private boolean mCryptoAutoEncrypt;
+    private String mMessageEncoding;
 
     private CryptoProvider mCryptoProvider = null;
 
@@ -247,6 +248,7 @@ public class Account implements BaseAccount {
         mCryptoApp = Apg.NAME;
         mCryptoAutoSignature = false;
         mCryptoAutoEncrypt = false;
+        mMessageEncoding = null;
         mEnabled = true;
 
         searchableFolders = Searchable.ALL;
@@ -417,6 +419,7 @@ public class Account implements BaseAccount {
         mCryptoApp = prefs.getString(mUuid + ".cryptoApp", Apg.NAME);
         mCryptoAutoSignature = prefs.getBoolean(mUuid + ".cryptoAutoSignature", false);
         mCryptoAutoEncrypt = prefs.getBoolean(mUuid + ".cryptoAutoEncrypt", false);
+        mMessageEncoding = prefs.getString(mUuid + ".messageEncoding", "UTF-8");
         mEnabled = prefs.getBoolean(mUuid + ".enabled", true);
         mSyncKey = prefs.getString(mUuid + ".syncKey", "");
         mSecurityKey = prefs.getString(mUuid + ".securityKey", "");
@@ -659,6 +662,7 @@ public class Account implements BaseAccount {
         editor.putString(mUuid + ".cryptoApp", mCryptoApp);
         editor.putBoolean(mUuid + ".cryptoAutoSignature", mCryptoAutoSignature);
         editor.putBoolean(mUuid + ".cryptoAutoEncrypt", mCryptoAutoEncrypt);
+        editor.putString(mUuid + ".messageEncoding", mMessageEncoding);
         editor.putBoolean(mUuid + ".enabled", mEnabled);
         editor.putString(mUuid + ".syncKey", mSyncKey);
         editor.putString(mUuid + ".securityKey", mSecurityKey);
@@ -1506,6 +1510,14 @@ public class Account implements BaseAccount {
 
     public void setCryptoAutoEncrypt(boolean cryptoAutoEncrypt) {
         mCryptoAutoEncrypt = cryptoAutoEncrypt;
+    }
+
+    public String getMessageEncoding() {
+        return mMessageEncoding;
+    }
+
+    public void setMessageEncoding(String messageEncoding) {
+        mMessageEncoding = messageEncoding;
     }
 
     public String getInboxFolderName() {

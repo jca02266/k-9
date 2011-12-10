@@ -100,6 +100,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private static final String PREFERENCE_CRYPTO_AUTO_ENCRYPT = "crypto_auto_encrypt";
 
     private static final String PREFERENCE_LOCAL_STORAGE_PROVIDER = "local_storage_provider";
+    private static final String PREFERENCE_MESSAGE_ENCODING = "message_encoding";
 
 
     private static final String PREFERENCE_ARCHIVE_FOLDER = "archive_folder";
@@ -164,6 +165,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private ListPreference mCryptoApp;
     private CheckBoxPreference mCryptoAutoSignature;
     private CheckBoxPreference mCryptoAutoEncrypt;
+    private ListPreference mMessageEncoding;
 
     private ListPreference mLocalStorageProvider;
 
@@ -691,6 +693,19 @@ public class AccountSettings extends K9PreferenceActivity {
         mCryptoAutoEncrypt.setChecked(mAccount.isCryptoAutoEncrypt());
 
         handleCryptoAppDependencies();
+
+        mMessageEncoding = (ListPreference) findPreference(PREFERENCE_MESSAGE_ENCODING);
+        mMessageEncoding.setValue(mAccount.getMessageEncoding());
+        mMessageEncoding.setSummary(mMessageEncoding.getEntry());
+        mMessageEncoding.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                final String summary = newValue.toString();
+                int index = mMessageEncoding.findIndexOfValue(summary);
+                mMessageEncoding.setSummary(mMessageEncoding.getEntries()[index]);
+                mMessageEncoding.setValue(summary);
+                return false;
+            }
+        });
     }
 
     private void handleCryptoAppDependencies() {
@@ -761,7 +776,7 @@ public class AccountSettings extends K9PreferenceActivity {
         mAccount.setSentFolderName(mSentFolder.getValue());
         mAccount.setSpamFolderName(mSpamFolder.getValue());
         mAccount.setTrashFolderName(mTrashFolder.getValue());
-
+        mAccount.setMessageEncoding(mMessageEncoding.getValue());
 
         if (mIsPushCapable) {
             mAccount.setPushPollOnConnect(mPushPollOnConnect.isChecked());
