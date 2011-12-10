@@ -665,7 +665,7 @@
         <item>6</item>
     </string-array>
 
-    <string-array name="account_settings_message_encoding_entries">
+    <string-array name="account_settings_message_charset_entries">
         <item>UTF-8</item>
         <item>ISO-2022-JP</item>
     </string-array>

@@ -59,8 +59,17 @@ public abstract class Multipart implements Body {
             try {
                 Body body = part.getBody();
                 if (body instanceof TextBody) {
-                    part.setHeader(MimeHeader.HEADER_CONTENT_TRANSFER_ENCODING, encoding);
-                    ((TextBody)body).setEncoding(encoding);
+                    String[] contentType = part.getHeader("Content-Type");
+                    if (contentType.length > 0) {
+                        if (contentType[0].contains("text/plain")) {
+                            part.setHeader(MimeHeader.HEADER_CONTENT_TRANSFER_ENCODING, encoding);
+                            ((TextBody)body).setEncoding(encoding);
+                        }
+                        else if (contentType[0].contains("text/html")) {
+                            part.setHeader(MimeHeader.HEADER_CONTENT_TRANSFER_ENCODING, "8bit");
+                            ((TextBody)body).setEncoding("8bit");
+                        }
+                    }
                 }
             } catch (MessagingException e) {
                 // Ignore

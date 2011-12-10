@@ -99,7 +99,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private static final String PREFERENCE_CRYPTO_AUTO_ENCRYPT = "crypto_auto_encrypt";
 
     private static final String PREFERENCE_LOCAL_STORAGE_PROVIDER = "local_storage_provider";
-    private static final String PREFERENCE_MESSAGE_ENCODING = "message_encoding";
+    private static final String PREFERENCE_MESSAGE_CHARSET = "message_charset";
 
 
     private static final String PREFERENCE_ARCHIVE_FOLDER = "archive_folder";
@@ -163,7 +163,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private ListPreference mCryptoApp;
     private CheckBoxPreference mCryptoAutoSignature;
     private CheckBoxPreference mCryptoAutoEncrypt;
-    private ListPreference mMessageEncoding;
+    private ListPreference mMessageCharset;
 
     private ListPreference mLocalStorageProvider;
 
@@ -689,15 +689,15 @@ public class AccountSettings extends K9PreferenceActivity {
 
         handleCryptoAppDependencies();
 
-        mMessageEncoding = (ListPreference) findPreference(PREFERENCE_MESSAGE_ENCODING);
-        mMessageEncoding.setValue(mAccount.getMessageEncoding());
-        mMessageEncoding.setSummary(mMessageEncoding.getEntry());
-        mMessageEncoding.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+        mMessageCharset = (ListPreference) findPreference(PREFERENCE_MESSAGE_CHARSET);
+        mMessageCharset.setValue(mAccount.getMessageCharset());
+        mMessageCharset.setSummary(mMessageCharset.getEntry());
+        mMessageCharset.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 final String summary = newValue.toString();
-                int index = mMessageEncoding.findIndexOfValue(summary);
-                mMessageEncoding.setSummary(mMessageEncoding.getEntries()[index]);
-                mMessageEncoding.setValue(summary);
+                int index = mMessageCharset.findIndexOfValue(summary);
+                mMessageCharset.setSummary(mMessageCharset.getEntries()[index]);
+                mMessageCharset.setValue(summary);
                 return false;
             }
         });
@@ -770,7 +770,7 @@ public class AccountSettings extends K9PreferenceActivity {
         mAccount.setSentFolderName(mSentFolder.getValue());
         mAccount.setSpamFolderName(mSpamFolder.getValue());
         mAccount.setTrashFolderName(mTrashFolder.getValue());
-        mAccount.setMessageEncoding(mMessageEncoding.getValue());
+        mAccount.setMessageCharset(mMessageCharset.getValue());
 
         if (mIsPushCapable) {
             mAccount.setPushPollOnConnect(mPushPollOnConnect.isChecked());

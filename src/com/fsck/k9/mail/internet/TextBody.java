@@ -6,6 +6,7 @@ import com.fsck.k9.mail.MessagingException;
 
 import java.io.*;
 
+import org.apache.james.mime4j.codec.Base64OutputStream;
 import org.apache.james.mime4j.codec.QuotedPrintableOutputStream;
 
 public class TextBody implements Body {
@@ -31,8 +32,12 @@ public class TextBody implements Body {
     public void writeTo(OutputStream out) throws IOException, MessagingException {
         if (mBody != null) {
             byte[] bytes = mBody.getBytes(mCharset);
-            if ("8bit".equals(mEncoding)) {
+            if ("8bit".equals(mEncoding) || "7bit".equals(mEncoding)) {
                 out.write(bytes);
+            } else if ("base64".equals(mEncoding)) {
+                Base64OutputStream bp = new Base64OutputStream(out);
+                bp.write(bytes);
+                bp.flush();
             } else {
                 QuotedPrintableOutputStream qp = new QuotedPrintableOutputStream(out, false);
                 qp.write(bytes);
