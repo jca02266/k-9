@@ -154,7 +154,7 @@ public class Account implements BaseAccount {
     private String mSyncKey;
     private String mSecurityKey;
     private boolean mCryptoAutoEncrypt;
-    private String mMessageEncoding;
+    private String mMessageCharset;
 
     private CryptoProvider mCryptoProvider = null;
 
@@ -248,7 +248,7 @@ public class Account implements BaseAccount {
         mCryptoApp = Apg.NAME;
         mCryptoAutoSignature = false;
         mCryptoAutoEncrypt = false;
-        mMessageEncoding = null;
+        mMessageCharset = null;
         mEnabled = true;
 
         searchableFolders = Searchable.ALL;
@@ -419,7 +419,7 @@ public class Account implements BaseAccount {
         mCryptoApp = prefs.getString(mUuid + ".cryptoApp", Apg.NAME);
         mCryptoAutoSignature = prefs.getBoolean(mUuid + ".cryptoAutoSignature", false);
         mCryptoAutoEncrypt = prefs.getBoolean(mUuid + ".cryptoAutoEncrypt", false);
-        mMessageEncoding = prefs.getString(mUuid + ".messageEncoding", "UTF-8");
+        mMessageCharset = prefs.getString(mUuid + ".messageCharset", "UTF-8");
         mEnabled = prefs.getBoolean(mUuid + ".enabled", true);
         mSyncKey = prefs.getString(mUuid + ".syncKey", "");
         mSecurityKey = prefs.getString(mUuid + ".securityKey", "");
@@ -662,7 +662,7 @@ public class Account implements BaseAccount {
         editor.putString(mUuid + ".cryptoApp", mCryptoApp);
         editor.putBoolean(mUuid + ".cryptoAutoSignature", mCryptoAutoSignature);
         editor.putBoolean(mUuid + ".cryptoAutoEncrypt", mCryptoAutoEncrypt);
-        editor.putString(mUuid + ".messageEncoding", mMessageEncoding);
+        editor.putString(mUuid + ".messageCharset", mMessageCharset);
         editor.putBoolean(mUuid + ".enabled", mEnabled);
         editor.putString(mUuid + ".syncKey", mSyncKey);
         editor.putString(mUuid + ".securityKey", mSecurityKey);
@@ -1512,12 +1512,12 @@ public class Account implements BaseAccount {
         mCryptoAutoEncrypt = cryptoAutoEncrypt;
     }
 
-    public String getMessageEncoding() {
-        return mMessageEncoding;
+    public String getMessageCharset() {
+        return mMessageCharset;
     }
 
-    public void setMessageEncoding(String messageEncoding) {
-        mMessageEncoding = messageEncoding;
+    public void setMessageCharset(String messageCharset) {
+        mMessageCharset = messageCharset;
     }
 
     public String getInboxFolderName() {
