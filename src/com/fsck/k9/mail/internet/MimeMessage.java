@@ -41,7 +41,7 @@ public class MimeMessage extends Message {
 
     protected Body mBody;
     protected int mSize;
-    protected String mCharset;
+    protected String mCharset = "utf-8";
 
     public MimeMessage() {
     }
