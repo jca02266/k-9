@@ -19,6 +19,7 @@ import com.fsck.k9.helper.Utility;
 import com.fsck.k9.mail.ConnectionSecurity;
 import com.fsck.k9.mail.ServerSettings;
 import com.fsck.k9.mail.Store;
+import com.fsck.k9.mail.store.EasStore;
 import com.fsck.k9.mail.store.ImapStore;
 import com.fsck.k9.mail.store.Pop3Store;
 import com.fsck.k9.mail.store.WebDavStore;
@@ -49,6 +50,10 @@ public class AccountSetupIncoming extends K9Activity implements OnClickListener 
         80, 443, 443, 443, 443
     };
 
+    private static final int[] EAS_PORTS = {
+        80, 443, 443, 443, 443
+    };
+
     private static final ConnectionSecurity[] CONNECTION_SECURITY_TYPES = {
         ConnectionSecurity.NONE,
         ConnectionSecurity.SSL_TLS_OPTIONAL,
@@ -57,14 +62,9 @@ public class AccountSetupIncoming extends K9Activity implements OnClickListener 
         ConnectionSecurity.STARTTLS_REQUIRED
     };
 
-    private static final int[] EAS_PORTS = {
-        80, 443, 443, 443, 443
-    };
-
     private static final String[] AUTH_TYPES = {
         "PLAIN", "CRAM_MD5"
     };
-
 
     private int[] mAccountPorts;
     private String mStoreType;
