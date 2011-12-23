@@ -75,7 +75,7 @@ import com.fsck.k9.mail.transport.TrustedSocketFactory;
 
 public class EasStore extends Store {
     public static final String STORE_TYPE = "EAS";
-
+    
     // Security options
     private static final short CONNECTION_SECURITY_NONE = 0;
     private static final short CONNECTION_SECURITY_TLS_OPTIONAL = 1;
