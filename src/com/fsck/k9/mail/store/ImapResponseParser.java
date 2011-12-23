@@ -509,7 +509,7 @@ public class ImapResponseParser {
         }
 
         public String getAlertText() {
-            if (size() > 1 && equalsIgnoreCase("[ALERT]", get(1))) {
+            if (size() > 1 && !equalsIgnoreCase("[OK]", get(1))) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 2, count = size(); i < count; i++) {
                     sb.append(get(i).toString());
