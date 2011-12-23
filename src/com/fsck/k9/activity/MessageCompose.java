@@ -12,6 +12,7 @@ import android.webkit.WebViewClient;
 import com.fsck.k9.helper.HtmlConverter;
 import com.fsck.k9.helper.StringUtils;
 import com.fsck.k9.mail.*;
+import com.fsck.k9.view.AddressMultiAutoCompleteTextView;
 import com.fsck.k9.view.MessageWebView;
 import org.apache.james.mime4j.codec.EncoderUtil;
 import android.app.AlertDialog;
@@ -188,9 +189,9 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private TextView mFromView;
     private LinearLayout mCcWrapper;
     private LinearLayout mBccWrapper;
-    private MultiAutoCompleteTextView mToView;
-    private MultiAutoCompleteTextView mCcView;
-    private MultiAutoCompleteTextView mBccView;
+    private AddressMultiAutoCompleteTextView mToView;
+    private AddressMultiAutoCompleteTextView mCcView;
+    private AddressMultiAutoCompleteTextView mBccView;
     private EditText mSubjectView;
     private EditText mSignatureView;
     private EditText mMessageContentView;
@@ -401,9 +402,9 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         mAddressValidator = new EmailAddressValidator();
 
         mFromView = (TextView) findViewById(R.id.from);
-        mToView = (MultiAutoCompleteTextView) findViewById(R.id.to);
-        mCcView = (MultiAutoCompleteTextView) findViewById(R.id.cc);
-        mBccView = (MultiAutoCompleteTextView) findViewById(R.id.bcc);
+        mToView = (AddressMultiAutoCompleteTextView) findViewById(R.id.to);
+        mCcView = (AddressMultiAutoCompleteTextView) findViewById(R.id.cc);
+        mBccView = (AddressMultiAutoCompleteTextView) findViewById(R.id.bcc);
         mSubjectView = (EditText) findViewById(R.id.subject);
         mSubjectView.getInputExtras(true).putBoolean("allowEmoji", true);
 
