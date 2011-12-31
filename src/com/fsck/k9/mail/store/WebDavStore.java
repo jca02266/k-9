@@ -310,7 +310,6 @@ public class WebDavStore extends Store {
     private String mPath; /* Stores the path for the server */
     private String mAuthPath; /* Stores the path off of the server to post data to for form based authentication */
     private String mMailboxPath; /* Stores the user specified path to the mailbox */
-    private URI mUri; /* Stores the Uniform Resource Indicator with all connection info */
 
     private boolean mSecure;
     private WebDavHttpClient mHttpClient = null;
@@ -2236,7 +2235,6 @@ public class WebDavStore extends Store {
      */
     public class DataSet {
         private HashMap<String, HashMap<String, String>> mData = new HashMap<String, HashMap<String, String>>();
-        // private HashMap<String, String> mLostData = new HashMap<String, String>();
         private StringBuilder mUid = new StringBuilder();
         private HashMap<String, String> mTempData = new HashMap<String, String>();
 
@@ -2254,8 +2252,7 @@ public class WebDavStore extends Store {
 
         public void finish() {
             String uid = mUid.toString();
-            if (!uid.equals("") &&
-                    mTempData != null) {
+            if (uid != null && mTempData != null) {
                 mData.put(uid, mTempData);
             } else if (mTempData != null) {
                 /*
