@@ -62,7 +62,6 @@ import com.fsck.k9.mail.ServerSettings;
 import com.fsck.k9.mail.Store;
 import com.fsck.k9.mail.filter.EOLConvertingOutputStream;
 import com.fsck.k9.mail.internet.MimeMessage;
-import com.fsck.k9.mail.store.LocalStore.LocalFolder;
 import com.fsck.k9.mail.store.exchange.Eas;
 import com.fsck.k9.mail.store.exchange.adapter.EasEmailSyncParser;
 import com.fsck.k9.mail.store.exchange.adapter.FolderSyncParser;
@@ -253,9 +252,10 @@ public class EasStore extends Store {
     private Double mProtocolVersionDouble = null;
     private String mDeviceId = null;
     private Object mInitializationLock = new Object();
-    private final String mDeviceType = "Android";
+    private final String mDeviceType = "K9Mail";
 
     private String mHost;
+    private int mPort;
     private String mUsername;
     private String mPassword;
     private short mConnectionSecurity;
@@ -277,6 +277,7 @@ public class EasStore extends Store {
         }
         
         mHost = settings.host;
+        mPort = settings.port;
         mUsername = settings.username;
         mPassword = settings.password;
 
@@ -667,7 +668,7 @@ public class EasStore extends Store {
         boolean mSsl = true;
         boolean mTrustSsl = false;
         String us = (mSsl ? (mTrustSsl ? "httpts" : "https") : "http") + "://" + mHost +
-                    "/Microsoft-Server-ActiveSync";
+                    ":" + Integer.toString(mPort) + "/Microsoft-Server-ActiveSync";
         if (cmd != null) {
             us += "?Cmd=" + cmd + mCmdString;
         }
@@ -800,6 +801,7 @@ public class EasStore extends Store {
             throw new MessagingException("io", e);
         }
 
+        // EASTODO: This needs to preserve the sync key for each folder.
         synchronized (mFolderList) {
             mFolderList.clear();
             for (Folder folder : folderList) {
@@ -866,7 +868,7 @@ public class EasStore extends Store {
 
                         EasFolder remoteFolder = new EasFolder(folder.getName(), folder.getRemoteName(), type);
                         mFolderList.put(folder.getRemoteName(), remoteFolder);
-                        remoteFolder.setLocalFolder((LocalFolder)folder, true);
+                        remoteFolder.setSyncKey(folder.getPushState());
                     }
                 }
             }
@@ -904,6 +906,11 @@ public class EasStore extends Store {
 
     @Override
     public boolean isSendCapable() {
+        return true;
+    }
+    
+    @Override
+    public boolean keepPushStateInSync() {
         return true;
     }
 
@@ -997,7 +1004,6 @@ public class EasStore extends Store {
         private int mType;
         private boolean mIsOpen = false;
         private String mSyncKey = null;
-        private LocalFolder mLocalFolder = null;
 
         protected EasStore getStore() {
             return EasStore.this;
@@ -1010,16 +1016,6 @@ public class EasStore extends Store {
             mType = type;
         }
 
-        public void setLocalFolder(LocalFolder folder, boolean setSyncKey) {
-            mLocalFolder = folder;
-            if (setSyncKey && mLocalFolder != null) {
-                if (mSyncKey != null && !mSyncKey.equals(INITIAL_SYNC_KEY)) {
-                    Log.d(K9.LOG_TAG, "Overriding non-default SyncKey: " + mSyncKey);
-                }
-                mSyncKey = mLocalFolder.getPushState();
-            }
-        }
-
         public String getSyncKey() throws MessagingException {
             if (mSyncKey == null) {
                 Log.d(K9.LOG_TAG, "Reset SyncKey to 0");
@@ -1030,9 +1026,6 @@ public class EasStore extends Store {
 
         public void setSyncKey(String key) throws MessagingException {
             mSyncKey = key;
-            if (mLocalFolder != null) {
-                mLocalFolder.setPushState(mSyncKey);
-            }
         }
 
         @Override
@@ -1447,10 +1440,15 @@ public class EasStore extends Store {
                   "Unimplemented method setFlags(Flag[], boolean) breaks markAllMessagesAsRead and EmptyTrash");
             // Try to make this efficient by not retrieving all of the messages
         }
+        
+        @Override 
+        public String getPushState() {
+            return mSyncKey;
+        }
 
         @Override
         public String getNewPushState(String oldPushState, Message message) {
-            return mSyncKey;
+            return getPushState();
         }
     }
 
