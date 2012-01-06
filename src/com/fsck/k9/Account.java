@@ -68,6 +68,7 @@ public class Account implements BaseAccount {
     public static final boolean DEFAULT_QUOTED_TEXT_SHOWN = true;
     public static final boolean DEFAULT_REPLY_AFTER_QUOTE = false;
     public static final boolean DEFAULT_STRIP_SIGNATURE = true;
+    public static final String DEFAULT_MESSAGE_CHARSET = "UTF-8";
 
     public static final String ACCOUNT_DESCRIPTION_KEY = "description";
     public static final String STORE_URI_KEY = "storeUri";
@@ -249,7 +250,7 @@ public class Account implements BaseAccount {
         mCryptoApp = Apg.NAME;
         mCryptoAutoSignature = false;
         mCryptoAutoEncrypt = false;
-        mMessageCharset = null;
+        mMessageCharset = DEFAULT_MESSAGE_CHARSET;
         mEnabled = true;
 
         searchableFolders = Searchable.ALL;
