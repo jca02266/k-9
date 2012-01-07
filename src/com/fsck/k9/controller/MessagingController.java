@@ -1114,7 +1114,7 @@ public class MessagingController implements Runnable {
         } finally {
             // For certain store types, we need to make sure to keep the push state of the local
             // and remote folder in sync.
-            if (remoteStore.keepPushStateInSync()) {
+            if (remoteStore != null && remoteStore.keepPushStateInSync()) {
                 if (remoteFolder != null && tLocalFolder != null) {
                     try {
                         tLocalFolder.setPushState(remoteFolder.getPushState());

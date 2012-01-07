@@ -540,22 +540,26 @@ public class SmtpTransport extends Transport {
     @Override
     public void close() {
         try {
-            executeSimpleCommand("QUIT");
+            if (mOut != null)
+                executeSimpleCommand("QUIT");
         } catch (Exception e) {
 
         }
         try {
-            mIn.close();
+            if (mIn != null)
+                mIn.close();
         } catch (Exception e) {
 
         }
         try {
-            mOut.close();
+            if (mOut != null)
+                mOut.close();
         } catch (Exception e) {
 
         }
         try {
-            mSocket.close();
+            if (mSocket != null)
+                mSocket.close();
         } catch (Exception e) {
 
         }
