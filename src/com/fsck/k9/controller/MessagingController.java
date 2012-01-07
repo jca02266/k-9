@@ -1019,8 +1019,7 @@ public class MessagingController implements Runnable {
              */
             ArrayList<Message> destroyMessages = new ArrayList<Message>();
             for (Message localMessage : localMessages) {
-                if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX)) {
-//                if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX) && localMessage.isSet(Flag.X_DOWNLOADED_FULL)) {
+                if (localMessage.getUid().startsWith(K9.LOCAL_UID_PREFIX) && !localMessage.isSet(Flag.DELETED)) {
                       PendingCommand command = new PendingCommand();
                       command.command = PENDING_COMMAND_APPEND;
                       command.arguments = new String[] {

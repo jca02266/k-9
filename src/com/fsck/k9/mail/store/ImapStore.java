@@ -1864,6 +1864,11 @@ public class ImapStore extends Store {
             checkOpen();
             try {
                 for (Message message : messages) {
+                    if (message.isSet(Flag.DELETED)) {
+                        if (K9.DEBUG)
+                            Log.d(K9.LOG_TAG, "Skip deleted message " + message.getUid() + " avoid SocketTimeoutException for " + getLogId());
+                        continue;
+                    }
                     mConnection.sendCommand(
                         String.format("APPEND %s (%s) {%d}",
                                       encodeString(encodeFolderName(getPrefixedName())),
