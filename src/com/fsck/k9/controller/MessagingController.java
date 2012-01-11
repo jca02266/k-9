@@ -3033,7 +3033,13 @@ public class MessagingController implements Runnable {
 
             Message[] localMessages = localFolder.getMessages(null);
             int progress = 0;
-            int todo = localMessages.length;
+            int todo = 0;
+            for (Message message : localMessages) {
+                if (message.isSet(Flag.DELETED)) {
+                    continue;
+                }
+                todo++;
+            }
             for (MessagingListener l : getListeners()) {
                 l.synchronizeMailboxProgress(account, account.getSentFolderName(), progress, todo);
             }
