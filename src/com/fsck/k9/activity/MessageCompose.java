@@ -941,13 +941,19 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         if (addresses == null) {
             return;
         }
+        Address[] view_addresses = getAddresses(view);
         for (Address address : addresses) {
-            addAddress(view, address);
+            if (!Utility.arrayContains(view_addresses, address)) {
+                addAddress(view, address);
+            }
         }
     }
 
     private void addAddress(MultiAutoCompleteTextView view, Address address) {
-        view.append(address + ", ");
+        Address[] view_addresses = getAddresses(view);
+        if (!Utility.arrayContains(view_addresses, address)) {
+            view.append(address + ", ");
+        }
     }
 
     private Address[] getAddresses(MultiAutoCompleteTextView view) {
