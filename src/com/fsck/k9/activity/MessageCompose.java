@@ -1567,7 +1567,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
     private void onDiscard() {
         if (mDraftUid != null) {
-            MessagingController.getInstance(getApplication()).deleteDraft(mAccount, mDraftUid, false);
+            MessagingController.getInstance(getApplication()).deleteDraft(mAccount, mDraftUid);
             mDraftUid = null;
         }
         mHandler.sendEmptyMessage(MSG_DISCARDED_DRAFT);
@@ -1829,7 +1829,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                               + previousDraftUid);
                     }
                     MessagingController.getInstance(getApplication()).deleteDraft(previousAccount,
-                            previousDraftUid, false);
+                            previousDraftUid);
                 }
             } else {
                 mAccount = account;
@@ -2938,7 +2938,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
             MessagingController.getInstance(getApplication()).sendMessage(mAccount, message, null);
             if (mDraftUid != null) {
-                MessagingController.getInstance(getApplication()).deleteDraft(mAccount, mDraftUid, false);
+                MessagingController.getInstance(getApplication()).deleteDraft(mAccount, mDraftUid);
                 mDraftUid = null;
             }
 
