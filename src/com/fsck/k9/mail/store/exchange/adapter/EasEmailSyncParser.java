@@ -542,17 +542,19 @@ public class EasEmailSyncParser extends AbstractSyncParser {
 
         for (ServerChange srvChg : changedEmails) {
             EasMessage msg = new EasMessage(srvChg.serverId, mFolder);
+            msg.setFlag(Flag.X_DELTA_ONLY, true);
             if (srvChg.read != null) {
-                msg.setFlag(Flag.SEEN, srvChg.read);
+                msg.setFlag(Flag.SEEN, srvChg.read, false);
             }
             if (srvChg.flag != null) {
-                msg.setFlag(Flag.FLAGGED, srvChg.flag);
+                msg.setFlag(Flag.FLAGGED, srvChg.flag, false);
             }
             messages.add(msg);
         }
 
         for (String serverId : deletedEmails) {
             EasMessage msg = new EasMessage(serverId, mFolder);
+            msg.setFlag(Flag.X_DELTA_ONLY, true);
             msg.setFlag(Flag.DELETED, true);
             messages.add(msg);
         }

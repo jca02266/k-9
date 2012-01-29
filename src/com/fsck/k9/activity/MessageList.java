@@ -733,6 +733,9 @@ public class MessageList
             mCurrentFolder = mAdapter.getFolder(mFolderName, mAccount);
         }
 
+        // Hide "Load up to x more" footer for search views
+        mFooterView.setVisibility((mQueryString != null) ? View.GONE : View.VISIBLE);
+
         mController = MessagingController.getInstance(getApplication());
         mListView.setAdapter(mAdapter);
     }
@@ -801,9 +804,17 @@ public class MessageList
         sortDateAscending = mController.isSortAscending(SORT_TYPE.SORT_DATE);
 
         mController.addListener(mAdapter.mListener);
+
+        Account[] accountsWithNotification;
         if (mAccount != null) {
-            mController.notifyAccountCancel(this, mAccount);
-            MessagingController.getInstance(getApplication()).notifyAccountCancel(this, mAccount);
+            accountsWithNotification = new Account[] { mAccount };
+        } else {
+            Preferences preferences = Preferences.getPreferences(this);
+            accountsWithNotification = preferences.getAccounts();
+        }
+
+        for (Account accountWithNotification : accountsWithNotification) {
+            mController.notifyAccountCancel(this, accountWithNotification);
         }
 
         if (mAdapter.messages.isEmpty()) {
@@ -2170,15 +2181,15 @@ public class MessageList
                 if (holder.selected != null) {
                     holder.selected.setOnCheckedChangeListener(holder);
                 }
-                holder.subject.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mFontSizes.getMessageListSubject());
-                holder.date.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mFontSizes.getMessageListDate());
+                holder.subject.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageListSubject());
+                holder.date.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageListDate());
 
                 if (mTouchView) {
                     holder.preview.setLines(mPreviewLines);
-                    holder.preview.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mFontSizes.getMessageListPreview());
+                    holder.preview.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageListPreview());
 
                 } else {
-                    holder.from.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mFontSizes.getMessageListSender());
+                    holder.from.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageListSender());
                 }
 
                 view.setTag(holder);
@@ -2386,9 +2397,6 @@ public class MessageList
     private View getFooterView(ViewGroup parent) {
         if (mFooterView == null) {
             mFooterView = mInflater.inflate(R.layout.message_list_item_footer, parent, false);
-            if (mQueryString != null) {
-                mFooterView.setVisibility(View.GONE);
-            }
             mFooterView.setId(R.layout.message_list_item_footer);
             FooterViewHolder holder = new FooterViewHolder();
             holder.progress = (ProgressBar) mFooterView.findViewById(R.id.message_list_progress);

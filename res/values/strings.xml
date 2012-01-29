@@ -95,8 +95,11 @@
     <string name="send_alternate_chooser_title">Choose sender</string>
 
     <string name="mark_all_as_read_dlg_title">Mark all messages as read</string>
-    <string name="mark_all_as_read_dlg_instructions_fmt">Mark all messages in \'<xliff:g id="folder">%s</xliff:g>\' as read?  (including
-    messages in the folder that are not displayed in K-9)</string>
+    <string name="mark_all_as_read_dlg_instructions_fmt">Mark all messages in \'<xliff:g id="folder">%s</xliff:g>\' as read (including
+    messages in the folder that are not displayed in K-9)?</string>
+    
+    <string name="empty_trash_dlg_title">Empty trash</string>
+    <string name="empty_trash_dlg_instructions">Caution: this will delete all messages in the trash folder on the server, including messages that are not displayed in K-9.</string>
 
     <string name="flag_action">Add star</string>
     <string name="unflag_action">Remove star</string>
@@ -988,6 +991,9 @@ Welcome to K-9 Mail setup.  K-9 is an open source mail client for Android origin
     <string name="font_size_message_view_time">Time</string>
     <string name="font_size_message_view_date">Date</string>
     <string name="font_size_message_view_content">Message body</string>
+
+    <string name="font_size_message_compose">Message composition</string>
+    <string name="font_size_message_compose_input">Text input fields</string>
 
     <string name="font_size_tiniest">Tiniest</string>
     <string name="font_size_tiny">Tiny</string>
