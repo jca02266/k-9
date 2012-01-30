@@ -1821,6 +1821,39 @@ public class LocalStore extends Store implements Serializable {
             });
         }
 
+        public String getMessageUidById(final long id) throws MessagingException {
+            try {
+                return database.execute(false, new DbCallback<String>() {
+                    @Override
+                    public String doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
+                        try {
+                            open(OpenMode.READ_WRITE);
+                            Cursor cursor = null;
+
+                            try {
+                                cursor = db.rawQuery(
+                                             "SELECT uid FROM messages " +
+                                              "WHERE id = ? AND folder_id = ?",
+                                             new String[] {
+                                                 Long.toString(id), Long.toString(mFolderId)
+                                             });
+                                if (!cursor.moveToNext()) {
+                                    return null;
+                                }
+                                return cursor.getString(0);
+                            } finally {
+                                Utility.closeQuietly(cursor);
+                            }
+                        } catch (MessagingException e) {
+                            throw new WrappedException(e);
+                        }
+                    }
+                });
+            } catch (WrappedException e) {
+                throw(MessagingException) e.getCause();
+            }
+        }
+
         @Override
         public Message getMessage(final String uid) throws MessagingException {
             try {
@@ -2042,9 +2075,9 @@ public class LocalStore extends Store implements Serializable {
 
         /**
          * The method differs slightly from the contract; If an incoming message already has a uid
-         * assigned and it matches the uid of an existing message then this message will replace the
-         * old message. It is implemented as a delete/insert. This functionality is used in saving
-         * of drafts and re-synchronization of updated server messages.
+         * assigned and it matches the uid of an existing message then this message will replace
+         * the old message. This functionality is used in saving of drafts and re-synchronization
+         * of updated server messages.
          *
          * NOTE that although this method is located in the LocalStore class, it is not guaranteed
          * that the messages supplied as parameters are actually {@link LocalMessage} instances (in
@@ -2065,6 +2098,7 @@ public class LocalStore extends Store implements Serializable {
                                     throw new Error("LocalStore can only store Messages that extend MimeMessage");
                                 }
 
+                                long oldMessageId = -1;
                                 String uid = message.getUid();
                                 if (uid == null || copy) {
                                     uid = K9.LOCAL_UID_PREFIX + UUID.randomUUID().toString();
@@ -2072,20 +2106,20 @@ public class LocalStore extends Store implements Serializable {
                                         message.setUid(uid);
                                     }
                                 } else {
-                                    Message oldMessage = getMessage(uid);
-                                    if (oldMessage != null && !oldMessage.isSet(Flag.SEEN)) {
-                                        setUnreadMessageCount(getUnreadMessageCount() - 1);
+                                    LocalMessage oldMessage = (LocalMessage) getMessage(uid);
+
+                                    if (oldMessage != null) {
+                                        oldMessageId = oldMessage.getId();
+
+                                        if (!oldMessage.isSet(Flag.SEEN)) {
+                                            setUnreadMessageCount(getUnreadMessageCount() - 1);
+                                        }
+                                        if (oldMessage.isSet(Flag.FLAGGED)) {
+                                            setFlaggedMessageCount(getFlaggedMessageCount() - 1);
+                                        }
                                     }
-                                    if (oldMessage != null && oldMessage.isSet(Flag.FLAGGED)) {
-                                        setFlaggedMessageCount(getFlaggedMessageCount() - 1);
-                                    }
-                                    /*
-                                     * The message may already exist in this Folder, so delete it first.
-                                     */
+
                                     deleteAttachments(message.getUid());
-                                    db.execSQL("DELETE FROM messages WHERE folder_id = ? AND uid = ?",
-                                               new Object[]
-                                               { mFolderId, message.getUid() });
                                 }
 
                                 ArrayList<Part> viewables = new ArrayList<Part>();
@@ -2155,7 +2189,13 @@ public class LocalStore extends Store implements Serializable {
                                         cv.put("message_id", messageId);
                                     }
                                     long messageUid;
-                                    messageUid = db.insert("messages", "uid", cv);
+
+                                    if (oldMessageId == -1) {
+                                        messageUid = db.insert("messages", "uid", cv);
+                                    } else {
+                                        db.update("messages", cv, "id = ?", new String[] { Long.toString(oldMessageId) });
+                                        messageUid = oldMessageId;
+                                    }
                                     for (Part attachment : attachments) {
                                         saveAttachment(messageUid, attachment, copy);
                                     }
@@ -2601,7 +2641,7 @@ public class LocalStore extends Store implements Serializable {
             setVisibleLimit(mAccount.getDisplayCount());
         }
 
-        private void resetUnreadAndFlaggedCounts() {
+        public void resetUnreadAndFlaggedCounts() {
             try {
                 int newUnread = 0;
                 int newFlagged = 0;
@@ -2672,22 +2712,34 @@ public class LocalStore extends Store implements Serializable {
                 public Void doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
                     Cursor attachmentsCursor = null;
                     try {
-                        attachmentsCursor = db.query("attachments", new String[]
-                                                     { "id" }, "message_id = ?", new String[]
-                                                     { Long.toString(messageId) }, null, null, null);
+                        String accountUuid = mAccount.getUuid();
+                        Context context = mApplication;
+
+                        // Get attachment IDs
+                        String[] whereArgs = new String[] { Long.toString(messageId) };
+                        attachmentsCursor = db.query("attachments", new String[] { "id" },
+                                "message_id = ?", whereArgs, null, null, null);
+
                         final File attachmentDirectory = StorageManager.getInstance(mApplication)
-                                                         .getAttachmentDirectory(uUid, database.getStorageProviderId());
+                                .getAttachmentDirectory(uUid, database.getStorageProviderId());
+
                         while (attachmentsCursor.moveToNext()) {
-                            long attachmentId = attachmentsCursor.getLong(0);
+                            String attachmentId = Long.toString(attachmentsCursor.getLong(0));
                             try {
-                                File file = new File(attachmentDirectory, Long.toString(attachmentId));
+                                // Delete stored attachment
+                                File file = new File(attachmentDirectory, attachmentId);
                                 if (file.exists()) {
                                     file.delete();
                                 }
-                            } catch (Exception e) {
 
-                            }
+                                // Delete thumbnail file
+                                AttachmentProvider.deleteThumbnail(context, accountUuid,
+                                        attachmentId);
+                            } catch (Exception e) { /* ignore */ }
                         }
+
+                        // Delete attachment metadata from the database
+                        db.delete("attachments", "message_id = ?", whereArgs);
                     } finally {
                         Utility.closeQuietly(attachmentsCursor);
                     }
