@@ -1240,6 +1240,11 @@ public class LocalStore extends Store implements Serializable {
         public String getName() {
             return mName;
         }
+        
+        public void setName(String name) throws MessagingException {
+            mName = name;
+            updateFolderColumn("name", mName);
+        }
 
         @Override
         public boolean exists() throws MessagingException {
@@ -1395,6 +1400,7 @@ public class LocalStore extends Store implements Serializable {
             updateFolderColumn("status", status);
         }
 
+        @Override
         public void setPushState(final String pushState) throws MessagingException {
             mPushState = pushState;
             updateFolderColumn("push_state", pushState);

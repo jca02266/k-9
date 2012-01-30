@@ -201,7 +201,6 @@ public abstract class Folder {
     }
 
     public void refresh(Preferences preferences) throws MessagingException {
-
     }
 
     public boolean isInTopGroup() {
@@ -219,12 +218,11 @@ public abstract class Folder {
     public Account getAccount() {
         return mAccount;
     }
-
-    public boolean isSyncMode() {
-        return false;
-    }
     
     public String getPushState() {
         return null;
+    }
+    
+    public void setPushState(String state) throws MessagingException {
     }
 }
