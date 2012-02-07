@@ -1147,10 +1147,21 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
             if (includeQuotedText) {
                 String quotedText = mQuotedText.getText().toString();
                 if (replyAfterQuote) {
-                    composedMessageOffset = quotedText.length() + "\n".length();
-                    text = quotedText + "\n" + text;
+                    if (StringUtils.isNullOrEmpty(text)) {
+                        composedMessageOffset = quotedText.length();
+                        text = quotedText;
+                    }
+                    else {
+                        composedMessageOffset = quotedText.length() + "\n".length();
+                        text = quotedText + "\n" + text;
+                    }
                 } else {
-                    text += "\n\n" + quotedText.toString();
+                    if (StringUtils.isNullOrEmpty(text)) {
+                        text = quotedText;
+                    }
+                    else {
+                        text += "\n\n" + quotedText;
+                    }
                 }
             }
 
