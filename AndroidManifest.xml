@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="15006"
-    android:versionName="4.106" package="com.fsck.k9"
+    android:versionCode="15008"
+    android:versionName="4.108" package="com.fsck.k9"
     >
     <uses-sdk
        android:minSdkVersion="7"
@@ -208,6 +208,10 @@
             android:launchMode="singleTask"
             android:configChanges="locale"
             >
+            <intent-filter>
+                <!-- This action is only to allow an entry point for launcher shortcuts -->
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
         </activity>
         <activity
             android:name="com.fsck.k9.activity.MessageView"

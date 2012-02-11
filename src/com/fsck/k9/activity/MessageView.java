@@ -728,14 +728,10 @@ public class MessageView extends K9Activity implements OnClickListener {
 
     private void onFlag() {
         if (mMessage != null) {
-            mController.setFlag(mAccount,
-                                mMessage.getFolder().getRemoteName(), new String[] {mMessage.getUid()}, Flag.FLAGGED, !mMessage.isSet(Flag.FLAGGED));
-            try {
-                mMessage.setFlag(Flag.FLAGGED, !mMessage.isSet(Flag.FLAGGED));
-                mMessageView.setHeaders(mMessage, mAccount);
-            } catch (MessagingException me) {
-                Log.e(K9.LOG_TAG, "Could not set flag on local message", me);
-            }
+            boolean newState = !mMessage.isSet(Flag.FLAGGED);
+            mController.setFlag(mAccount, mMessage.getFolder().getRemoteName(),
+                    new Message[] { mMessage }, Flag.FLAGGED, newState);
+            mMessageView.setHeaders(mMessage, mAccount);
         }
     }
 
@@ -878,15 +874,11 @@ public class MessageView extends K9Activity implements OnClickListener {
 
     private void onMarkAsUnread() {
         if (mMessage != null) {
-// (Issue 3319)            mController.setFlag(mAccount, mMessageReference.folderName, new String[] { mMessage.getUid() }, Flag.SEEN, false);
-            try {
-                mMessage.setFlag(Flag.SEEN, false);
-                mMessageView.setHeaders(mMessage, mAccount);
-                String subject = mMessage.getSubject();
-                setTitle(subject);
-            } catch (Exception e) {
-                Log.e(K9.LOG_TAG, "Unable to unset SEEN flag on message", e);
-            }
+            mController.setFlag(mAccount, mMessage.getFolder().getName(),
+                    new Message[] { mMessage }, Flag.SEEN, false);
+            mMessageView.setHeaders(mMessage, mAccount);
+            String subject = mMessage.getSubject();
+            setTitle(subject);
         }
     }
 
