@@ -85,6 +85,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     private static final int DIALOG_SAVE_OR_DISCARD_DRAFT_MESSAGE = 1;
     private static final int DIALOG_REFUSE_TO_SAVE_DRAFT_MARKED_ENCRYPTED = 2;
     private static final int DIALOG_CONTINUE_WITHOUT_PUBLIC_KEY = 3;
+    private static final int DIALOG_CONFIRM_DISCARD_ON_BACK = 4;
 
     private static final long INVALID_DRAFT_ID = MessagingController.INVALID_MESSAGE_ID;
 
@@ -1631,7 +1632,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
             final Account account = Preferences.getPreferences(this).getAccount(mMessageReference.accountUuid);
             final String folderName = mMessageReference.folderName;
             final String sourceMessageUid = mMessageReference.uid;
-            MessagingController.getInstance(getApplication()).setFlag(account, folderName, new String[] {sourceMessageUid}, mMessageReference.flag, true);
+            MessagingController.getInstance(getApplication()).setFlag(account, folderName, sourceMessageUid, mMessageReference.flag, true);
         }
 
         mDraftNeedsSaving = false;
@@ -2107,13 +2108,21 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
     @Override
     public void onBackPressed() {
-        if (mEncryptCheckbox.isChecked()) {
-            showDialog(DIALOG_REFUSE_TO_SAVE_DRAFT_MARKED_ENCRYPTED);
-        } else if (!mDraftNeedsSaving || isDraftsFolderDisabled()) {
-            Toast.makeText(MessageCompose.this, getString(R.string.message_discarded_toast), Toast.LENGTH_LONG).show();
-            super.onBackPressed();
+        if (mDraftNeedsSaving) {
+            if (mEncryptCheckbox.isChecked()) {
+                showDialog(DIALOG_REFUSE_TO_SAVE_DRAFT_MARKED_ENCRYPTED);
+            } else if (isDraftsFolderDisabled()) {
+                showDialog(DIALOG_CONFIRM_DISCARD_ON_BACK);
+            } else {
+                showDialog(DIALOG_SAVE_OR_DISCARD_DRAFT_MESSAGE);
+            }
         } else {
-            showDialog(DIALOG_SAVE_OR_DISCARD_DRAFT_MESSAGE);
+            // Check if editing an existing draft.
+            if (mDraftId == INVALID_DRAFT_ID) {
+                onDiscard();
+            } else {
+                super.onBackPressed();
+            }
         }
     }
 
@@ -2174,6 +2183,27 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                 }
             })
                    .create();
+        case DIALOG_CONFIRM_DISCARD_ON_BACK:
+            return new AlertDialog.Builder(this)
+                   .setTitle(R.string.confirm_discard_draft_message_title)
+                   .setMessage(R.string.confirm_discard_draft_message)
+            .setPositiveButton(R.string.cancel_action, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    dismissDialog(DIALOG_CONFIRM_DISCARD_ON_BACK);
+                }
+            })
+            .setNegativeButton(R.string.discard_action, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    dismissDialog(DIALOG_CONFIRM_DISCARD_ON_BACK);
+                    Toast.makeText(MessageCompose.this,
+                                   getString(R.string.message_discarded_toast),
+                                   Toast.LENGTH_LONG).show();
+                    onDiscard();
+                }
+            })
+            .create();
         }
         return super.onCreateDialog(id);
     }
