@@ -520,7 +520,7 @@ public class MessageList
         private void setWindowTitle() {
             String displayName;
 
-            if (mCurrentFolder != null) {
+            if (mAccount != null && mCurrentFolder != null) {
                 displayName  = mCurrentFolder.folder.getName();
 
                 if (mAccount.getInboxFolderName().equalsIgnoreCase(displayName)) {
