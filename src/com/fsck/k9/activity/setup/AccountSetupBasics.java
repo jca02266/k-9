@@ -6,7 +6,10 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.XmlResourceParser;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -27,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.List;
 
 /**
  * Prompts the user for the email address and password. Also prompts for
@@ -56,6 +60,10 @@ public class AccountSetupBasics extends K9Activity
     private EmailAddressValidator mEmailValidator = new EmailAddressValidator();
 
     private static final int ACTIVITY_REQUEST_PICK_SETTINGS_FILE = 1;
+    /**
+     * URL used to open Android Market application
+     */
+    private static final String ANDROID_MARKET_URL = "https://market.android.com/search?q=oi+file+manager&c=apps";
 
     public static void actionNewAccount(Context context) {
         Intent i = new Intent(context, AccountSetupBasics.class);
@@ -351,7 +359,33 @@ public class AccountSetupBasics extends K9Activity
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType(MimeUtility.K9_SETTINGS_MIME_TYPE);
-        startActivityForResult(Intent.createChooser(i, null), ACTIVITY_REQUEST_PICK_SETTINGS_FILE);
+
+        PackageManager packageManager = getPackageManager();
+        List<ResolveInfo> infos = packageManager.queryIntentActivities(i, 0);
+
+        if (infos.size() > 0) {
+            startActivityForResult(Intent.createChooser(i, null),
+                    ACTIVITY_REQUEST_PICK_SETTINGS_FILE);
+        } else {
+            DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int button) {
+                    if (button == DialogInterface.BUTTON_POSITIVE) {
+                        Uri uri = Uri.parse(ANDROID_MARKET_URL);
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        startActivity(intent);
+                    } else if (button == DialogInterface.BUTTON_NEGATIVE) {
+                        dialog.dismiss();
+                    }
+                }
+            };
+
+            new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.import_dialog_error_title))
+                .setMessage(getString(R.string.import_dialog_error_message))
+                .setPositiveButton(getString(R.string.open_market), listener)
+                .setNegativeButton(getString(R.string.close), listener)
+                .show();
+        }
     }
 
     /**
