@@ -41,6 +41,17 @@ import com.fsck.k9.service.ShutdownReceiver;
 import com.fsck.k9.service.StorageGoneReceiver;
 
 public class K9 extends Application {
+
+    public static void updateUnreadWidget(Context context) {
+        try {
+            UnreadWidgetProvider.updateUnreadCount(context);
+        } catch (Exception e) {
+            if (K9.DEBUG) {
+                Log.e(LOG_TAG, "Error while updating unread widget(s)", e);
+            }
+        }
+    }
+
     /**
      * Components that are interested in knowing when the K9 instance is
      * available and ready (Android invokes Application.onCreate() after other

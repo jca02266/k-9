@@ -511,6 +511,7 @@ public class FolderList extends K9ListActivity {
             }
         }
 
+        K9.updateUnreadWidget(this);
         onRefresh(!REFRESH_REMOTE);
     }
 

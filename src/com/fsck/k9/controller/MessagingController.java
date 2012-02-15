@@ -4065,6 +4065,8 @@ public class MessagingController implements Runnable {
                         l.accountSizeChanged(account, oldSize, newSize);
                         l.accountStatusChanged(account, stats);
                     }
+
+                    K9.updateUnreadWidget(mApplication.getApplicationContext());
                 } catch (UnavailableStorageException e) {
                     Log.i(K9.LOG_TAG, "Failed to clear account because storage is not available - trying again later.");
                     throw new UnavailableAccountException(e);
@@ -4093,6 +4095,8 @@ public class MessagingController implements Runnable {
                         l.accountSizeChanged(account, oldSize, newSize);
                         l.accountStatusChanged(account, stats);
                     }
+
+                    K9.updateUnreadWidget(mApplication.getApplicationContext());
                 } catch (UnavailableStorageException e) {
                     Log.i(K9.LOG_TAG, "Failed to recreate an account because storage is not available - trying again later.");
                     throw new UnavailableAccountException(e);
