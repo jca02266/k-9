@@ -17,8 +17,11 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import com.fsck.k9.*;
+import com.fsck.k9.activity.Accounts;
 import com.fsck.k9.activity.K9Activity;
 import com.fsck.k9.helper.Utility;
+import com.fsck.k9.mail.internet.MimeUtility;
+
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -46,10 +49,13 @@ public class AccountSetupBasics extends K9Activity
     private CheckBox mDefaultView;
     private Button mNextButton;
     private Button mManualSetupButton;
+    private Button mImportAccount;
     private Account mAccount;
     private Provider mProvider;
 
     private EmailAddressValidator mEmailValidator = new EmailAddressValidator();
+
+    private static final int ACTIVITY_REQUEST_PICK_SETTINGS_FILE = 1;
 
     public static void actionNewAccount(Context context) {
         Intent i = new Intent(context, AccountSetupBasics.class);
@@ -66,9 +72,11 @@ public class AccountSetupBasics extends K9Activity
         mDefaultView = (CheckBox)findViewById(R.id.account_default);
         mNextButton = (Button)findViewById(R.id.next);
         mManualSetupButton = (Button)findViewById(R.id.manual_setup);
+        mImportAccount = (Button)findViewById(R.id.import_account);
 
         mNextButton.setOnClickListener(this);
         mManualSetupButton.setOnClickListener(this);
+        mImportAccount.setOnClickListener(this);
 
         mEmailView.addTextChangedListener(this);
         mPasswordView.addTextChangedListener(this);
@@ -268,6 +276,16 @@ public class AccountSetupBasics extends K9Activity
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+        case ACTIVITY_REQUEST_PICK_SETTINGS_FILE:
+            if (data != null && resultCode == RESULT_OK) {
+                Intent i = new Intent(this, Accounts.class);
+                i.setDataAndType(data.getData(), MimeUtility.K9_SETTINGS_MIME_TYPE);
+                startActivity(i);
+                finish();
+            }
+            return;
+        }
         if (resultCode == RESULT_OK) {
             mAccount.setDescription(mAccount.getEmail());
             mAccount.save(Preferences.getPreferences(this));
@@ -323,7 +341,17 @@ public class AccountSetupBasics extends K9Activity
         case R.id.manual_setup:
             onManualSetup();
             break;
+        case R.id.import_account:
+            onImport();
+            break;
         }
+    }
+
+    private void onImport() {
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType(MimeUtility.K9_SETTINGS_MIME_TYPE);
+        startActivityForResult(Intent.createChooser(i, null), ACTIVITY_REQUEST_PICK_SETTINGS_FILE);
     }
 
     /**

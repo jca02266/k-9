@@ -313,13 +313,16 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
     @Override
     public void onNewIntent(Intent intent) {
         Uri uri = intent.getData();
+        String contentType = intent.getType();
         Log.i(K9.LOG_TAG, "Accounts Activity got uri " + uri);
         if (uri != null) {
-            ContentResolver contentResolver = getContentResolver();
+            if (contentType == null) {
+                ContentResolver contentResolver = getContentResolver();
 
-            Log.i(K9.LOG_TAG, "Accounts Activity got content of type " + contentResolver.getType(uri));
+                Log.i(K9.LOG_TAG, "Accounts Activity got content of type " + contentResolver.getType(uri));
 
-            String contentType = contentResolver.getType(uri);
+                contentType = contentResolver.getType(uri);
+            }
             if (MimeUtility.K9_SETTINGS_MIME_TYPE.equals(contentType)) {
                 onImport(uri);
             }
