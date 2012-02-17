@@ -21,6 +21,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import com.fsck.k9.*;
 import com.fsck.k9.activity.Accounts;
+import com.fsck.k9.activity.ConfirmationDialog;
 import com.fsck.k9.activity.K9Activity;
 import com.fsck.k9.helper.Utility;
 import com.fsck.k9.mail.internet.MimeUtility;
@@ -44,6 +45,8 @@ public class AccountSetupBasics extends K9Activity
     implements OnClickListener, TextWatcher {
     private final static String EXTRA_ACCOUNT = "com.fsck.k9.AccountSetupBasics.account";
     private final static int DIALOG_NOTE = 1;
+    private final static int DIALOG_NO_FILE_MANAGER = 2;
+
     private final static String STATE_KEY_PROVIDER =
         "com.fsck.k9.AccountSetupBasics.provider";
 
@@ -171,7 +174,8 @@ public class AccountSetupBasics extends K9Activity
 
     @Override
     public Dialog onCreateDialog(int id) {
-        if (id == DIALOG_NOTE) {
+        switch (id) {
+        case DIALOG_NOTE:
             if (mProvider != null && mProvider.note != null) {
                 return new AlertDialog.Builder(this)
                        .setMessage(mProvider.note)
@@ -187,8 +191,35 @@ public class AccountSetupBasics extends K9Activity
                            null)
                        .create();
             }
+        case DIALOG_NO_FILE_MANAGER:
+            return ConfirmationDialog.create(this, id,
+                    R.string.import_dialog_error_title,
+                    getString(R.string.import_dialog_error_message),
+                    R.string.open_market,
+                    R.string.close,
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            Uri uri = Uri.parse(ANDROID_MARKET_URL);
+                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                            startActivity(intent);
+                        }
+                    });
         }
-        return null;
+        return super.onCreateDialog(id);
+    }
+
+    @Override
+    public void onPrepareDialog(int id, Dialog d) {
+
+        AlertDialog alert = (AlertDialog) d;
+        switch (id) {
+        case DIALOG_NO_FILE_MANAGER:
+            alert.setMessage(getString(R.string.import_dialog_error_message));
+            break;
+        }
+
+        super.onPrepareDialog(id, d);
     }
 
     private void finishAutoSetup() {
@@ -379,24 +410,7 @@ public class AccountSetupBasics extends K9Activity
             startActivityForResult(Intent.createChooser(i, null),
                     ACTIVITY_REQUEST_PICK_SETTINGS_FILE);
         } else {
-            DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int button) {
-                    if (button == DialogInterface.BUTTON_POSITIVE) {
-                        Uri uri = Uri.parse(ANDROID_MARKET_URL);
-                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                        startActivity(intent);
-                    } else if (button == DialogInterface.BUTTON_NEGATIVE) {
-                        dialog.dismiss();
-                    }
-                }
-            };
-
-            new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.import_dialog_error_title))
-                .setMessage(getString(R.string.import_dialog_error_message))
-                .setPositiveButton(getString(R.string.open_market), listener)
-                .setNegativeButton(getString(R.string.close), listener)
-                .show();
+            showDialog(DIALOG_NO_FILE_MANAGER);
         }
     }
 
