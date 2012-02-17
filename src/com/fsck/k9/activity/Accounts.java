@@ -121,6 +121,8 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
     private static final int DIALOG_REMOVE_ACCOUNT = 1;
     private static final int DIALOG_CLEAR_ACCOUNT = 2;
     private static final int DIALOG_RECREATE_ACCOUNT = 3;
+    private static final int DIALOG_NO_FILE_MANAGER = 4;
+
     private ConcurrentHashMap<String, AccountStats> accountStats = new ConcurrentHashMap<String, AccountStats>();
 
     private ConcurrentHashMap<BaseAccount, String> pendingWork = new ConcurrentHashMap<BaseAccount, String>();
@@ -996,6 +998,20 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
                     }
                 }
             });
+        case DIALOG_NO_FILE_MANAGER:
+            return ConfirmationDialog.create(this, id,
+                    R.string.import_dialog_error_title,
+                    getString(R.string.import_dialog_error_message),
+                    R.string.open_market,
+                    R.string.close,
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            Uri uri = Uri.parse(ANDROID_MARKET_URL);
+                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                            startActivity(intent);
+                        }
+                    });
         }
         return super.onCreateDialog(id);
     }
@@ -1016,6 +1032,9 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
         case DIALOG_RECREATE_ACCOUNT:
             alert.setMessage(getString(R.string.account_recreate_dlg_instructions_fmt,
                                        mSelectedContextAccount.getDescription()));
+            break;
+        case DIALOG_NO_FILE_MANAGER:
+            alert.setMessage(getString(R.string.import_dialog_error_message));
             break;
         }
 
@@ -1277,24 +1296,7 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
             startActivityForResult(Intent.createChooser(i, null),
                     ACTIVITY_REQUEST_PICK_SETTINGS_FILE);
         } else {
-            DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int button) {
-                    if (button == DialogInterface.BUTTON_POSITIVE) {
-                        Uri uri = Uri.parse(ANDROID_MARKET_URL);
-                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                        startActivity(intent);
-                    } else if (button == DialogInterface.BUTTON_NEGATIVE) {
-                        dialog.dismiss();
-                    }
-                }
-            };
-
-            new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.import_dialog_error_title))
-                .setMessage(getString(R.string.import_dialog_error_message))
-                .setPositiveButton(getString(R.string.open_market), listener)
-                .setNegativeButton(getString(R.string.close), listener)
-                .show();
+            showDialog(DIALOG_NO_FILE_MANAGER);
         }
     }
 
