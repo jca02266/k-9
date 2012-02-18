@@ -635,13 +635,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
             }
 
             if (!ACTION_EDIT_DRAFT.equals(action)) {
-                String bccAddress = mAccount.getAlwaysBcc();
-                if ((bccAddress != null) && !("".equals(bccAddress))) {
-                    String[] bccAddresses = bccAddress.split(",");
-                    for (String oneBccAddress : bccAddresses) {
-                        addAddress(mBccView, new Address(oneBccAddress, ""));
-                    }
-                }
+                addAddresses(mBccView, mAccount.getAlwaysBcc());
             }
 
             /*
@@ -975,6 +969,15 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     public void onFocusChange(View view, boolean focused) {
         if (!focused) {
             updateTitle();
+        }
+    }
+
+    private void addAddresses(MultiAutoCompleteTextView view, String addresses) {
+        if (StringUtils.isNullOrEmpty(addresses)) {
+            return;
+        }
+        for (String address : addresses.split(",")) {
+            addAddress(view, new Address(address, ""));
         }
     }
 
@@ -1929,6 +1932,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         mIdentityChanged = true;
         mDraftNeedsSaving = true;
         updateFrom();
+        updateBcc();
         updateSignature();
     }
 
@@ -1937,6 +1941,14 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
             mFromView.setVisibility(View.VISIBLE);
         }
         mFromView.setText(getString(R.string.message_view_from_format, mIdentity.getName(), mIdentity.getEmail()));
+    }
+
+    private void updateBcc() {
+        if (mIdentityChanged) {
+            mBccWrapper.setVisibility(View.VISIBLE);
+        }
+        mBccView.setText("");
+        addAddresses(mBccView, mAccount.getAlwaysBcc());
     }
 
     private void updateSignature() {
