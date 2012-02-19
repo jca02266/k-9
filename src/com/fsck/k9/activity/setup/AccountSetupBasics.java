@@ -62,7 +62,7 @@ public class AccountSetupBasics extends K9Activity
 
     private EmailAddressValidator mEmailValidator = new EmailAddressValidator();
 
-    private static final int ACTIVITY_REQUEST_PICK_SETTINGS_FILE = 1;
+    private static final int ACTIVITY_REQUEST_PICK_SETTINGS_FILE = 2;
     /**
      * URL used to open Android Market application
      */
@@ -320,6 +320,10 @@ public class AccountSetupBasics extends K9Activity
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != RESULT_OK) {
+            return;
+        }
+
         switch (requestCode) {
         case ACTIVITY_REQUEST_PICK_SETTINGS_FILE:
             if (data != null && resultCode == RESULT_OK) {
@@ -329,8 +333,7 @@ public class AccountSetupBasics extends K9Activity
                 finish();
             }
             return;
-        }
-        if (resultCode == RESULT_OK) {
+        default:
             mAccount.setDescription(mAccount.getEmail());
             mAccount.save(Preferences.getPreferences(this));
             if (mDefaultView.isChecked()) {
