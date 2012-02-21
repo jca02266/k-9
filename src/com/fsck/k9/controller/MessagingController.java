@@ -1495,6 +1495,8 @@ public class MessagingController implements Runnable {
             syncFlagMessages.add(message);
             return;
         } else if (isMessageSuppressed(account, folder, message)) {
+            if (K9.DEBUG)
+                Log.v(K9.LOG_TAG, "Message with uid " + message.getUid() + " is suppressed");
             return;
         }
 
