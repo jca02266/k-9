@@ -100,6 +100,7 @@ public class AccountSettings extends K9PreferenceActivity {
 
     private static final String PREFERENCE_LOCAL_STORAGE_PROVIDER = "local_storage_provider";
     private static final String PREFERENCE_MESSAGE_CHARSET = "message_charset";
+    private static final String PREFERENCE_SHOW_SENDER = "show_sender";
 
 
     private static final String PREFERENCE_ARCHIVE_FOLDER = "archive_folder";
@@ -164,6 +165,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private CheckBoxPreference mCryptoAutoSignature;
     private CheckBoxPreference mCryptoAutoEncrypt;
     private ListPreference mMessageCharset;
+    private CheckBoxPreference mShowSender;
 
     private ListPreference mLocalStorageProvider;
 
@@ -701,6 +703,9 @@ public class AccountSettings extends K9PreferenceActivity {
                 return false;
             }
         });
+
+        mShowSender = (CheckBoxPreference)findPreference(PREFERENCE_SHOW_SENDER);
+        mShowSender.setChecked(mAccount.isShowSender());
     }
 
     private void handleCryptoAppDependencies() {
@@ -766,6 +771,7 @@ public class AccountSettings extends K9PreferenceActivity {
         mAccount.setSpamFolderName(mSpamFolder.getValue());
         mAccount.setTrashFolderName(mTrashFolder.getValue());
         mAccount.setMessageCharset(mMessageCharset.getValue());
+        mAccount.setShowSender(mShowSender.isChecked());
 
         if (mIsPushCapable) {
             mAccount.setPushPollOnConnect(mPushPollOnConnect.isChecked());

@@ -553,8 +553,6 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         mQuotedTextEdit.setOnClickListener(this);
         mQuotedTextDelete.setOnClickListener(this);
 
-        mFromView.setVisibility(View.GONE);
-
         mToView.setAdapter(mAddressAdapter);
         mToView.setTokenizer(new Rfc822Tokenizer());
         mToView.setValidator(mAddressValidator);
@@ -584,6 +582,15 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
         if (mIdentity == null) {
             mIdentity = mAccount.getIdentity(0);
         }
+
+        if (mAccount.isShowSender()) {
+            findViewById(R.id.sender_layout).setVisibility(View.VISIBLE);
+            findViewById(R.id.chip).setBackgroundColor(mAccount.getChipColor());
+        }
+        else {
+            findViewById(R.id.sender_layout).setVisibility(View.GONE);
+        }
+        mFromView.setText(getString(R.string.message_view_from_format, mIdentity.getName(), mIdentity.getEmail()));
 
         if (mAccount.isSignatureBeforeQuotedText()) {
             mSignatureView = upperSignature;
@@ -1934,7 +1941,8 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
     private void updateFrom() {
         if (mIdentityChanged) {
-            mFromView.setVisibility(View.VISIBLE);
+            findViewById(R.id.sender_layout).setVisibility(View.VISIBLE);
+            findViewById(R.id.chip).setBackgroundColor(mAccount.getChipColor());
         }
         mFromView.setText(getString(R.string.message_view_from_format, mIdentity.getName(), mIdentity.getEmail()));
     }
