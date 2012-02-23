@@ -1845,9 +1845,7 @@ public class MessagingController implements Runnable {
                  * right now, attachments will be left for later.
                  */
 
-                ArrayList<Part> viewables = new ArrayList<Part>();
-                ArrayList<Part> attachments = new ArrayList<Part>();
-                MimeUtility.collectParts(message, viewables, attachments);
+                Set<Part> viewables = MimeUtility.collectTextParts(message);
 
                 /*
                  * Now download the parts we're interested in storing.
@@ -2760,8 +2758,8 @@ public class MessagingController implements Runnable {
      *         The account the folder containing the message belongs to.
      * @param folderName
      *         The name of the folder.
-     * @param message
-     *         The message to change the flag for.
+     * @param uid
+     *         The UID of the message to change the flag for.
      * @param flag
      *         The flag to change.
      * @param newState
@@ -2776,8 +2774,9 @@ public class MessagingController implements Runnable {
             localFolder.open(OpenMode.READ_WRITE);
 
             Message message = localFolder.getMessage(uid);
-            setFlag(account, folderName, new Message[] { message }, flag, newState);
-
+            if (message != null) {
+                setFlag(account, folderName, new Message[] { message }, flag, newState);
+            }
         } catch (MessagingException me) {
             addErrorMessage(account, null, me);
             throw new RuntimeException(me);
@@ -2969,9 +2968,7 @@ public class MessagingController implements Runnable {
                 try {
                     LocalStore localStore = account.getLocalStore();
 
-                    ArrayList<Part> viewables = new ArrayList<Part>();
-                    ArrayList<Part> attachments = new ArrayList<Part>();
-                    MimeUtility.collectParts(message, viewables, attachments);
+                    List<Part> attachments = MimeUtility.collectAttachments(message);
                     for (Part attachment : attachments) {
                         attachment.setBody(null);
                     }
@@ -3450,11 +3447,16 @@ public class MessagingController implements Runnable {
             Folder localSrcFolder = localStore.getFolder(srcFolder);
             Folder localDestFolder = localStore.getFolder(destFolder);
 
+            boolean unreadCountAffected = false;
             List<String> uids = new LinkedList<String>();
             for (Message message : inMessages) {
                 String uid = message.getUid();
                 if (!uid.startsWith(K9.LOCAL_UID_PREFIX)) {
                     uids.add(uid);
+                }
+
+                if (!unreadCountAffected && !message.isSet(Flag.SEEN)) {
+                    unreadCountAffected = true;
                 }
             }
 
@@ -3476,6 +3478,15 @@ public class MessagingController implements Runnable {
                     fp.add(FetchProfile.Item.BODY);
                     localSrcFolder.fetch(messages, fp, null);
                     localSrcFolder.copyMessages(messages, localDestFolder);
+
+                    if (unreadCountAffected) {
+                        // If this copy operation changes the unread count in the destination
+                        // folder, notify the listeners.
+                        int unreadMessageCount = localDestFolder.getUnreadMessageCount();
+                        for (MessagingListener l : getListeners()) {
+                            l.folderStatusChanged(account, destFolder, unreadMessageCount);
+                        }
+                    }
                 } else {
                     localSrcFolder.moveMessages(messages, localDestFolder);
                     for (Map.Entry<String, Message> entry : origUidMap.entrySet()) {
@@ -3485,6 +3496,17 @@ public class MessagingController implements Runnable {
                             l.messageUidChanged(account, srcFolder, origUid, message.getUid());
                         }
                         unsuppressMessage(account, srcFolder, origUid);
+                    }
+
+                    if (unreadCountAffected) {
+                        // If this move operation changes the unread count, notify the listeners
+                        // that the unread count changed in both the source and destination folder.
+                        int unreadMessageCountSrc = localSrcFolder.getUnreadMessageCount();
+                        int unreadMessageCountDest = localDestFolder.getUnreadMessageCount();
+                        for (MessagingListener l : getListeners()) {
+                            l.folderStatusChanged(account, srcFolder, unreadMessageCountSrc);
+                            l.folderStatusChanged(account, destFolder, unreadMessageCountDest);
+                        }
                     }
                 }
 

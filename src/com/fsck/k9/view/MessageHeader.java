@@ -10,7 +10,10 @@ import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.CheckBox;
+import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,14 +28,13 @@ import com.fsck.k9.mail.Flag;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.internet.MimeUtility;
-import com.fsck.k9.mail.store.LocalStore;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.text.DateFormat;
 
-public class MessageHeader extends LinearLayout {
+public class MessageHeader extends ScrollView implements OnClickListener {
     private Context mContext;
     private TextView mFromView;
     private TextView mDateView;
@@ -44,17 +46,18 @@ public class MessageHeader extends LinearLayout {
     private DateFormat mTimeFormat;
 
     private View mChip;
+    private View mChip2;
     private CheckBox mFlagged;
     private int defaultSubjectColor;
     private LinearLayout mToContainerView;
     private LinearLayout mCcContainerView;
     private TextView mAdditionalHeadersView;
-    private View mAttachmentIcon;
     private View mAnsweredIcon;
     private Message mMessage;
     private Account mAccount;
     private FontSizes mFontSizes = K9.getFontSizes();
     private Contacts mContacts;
+    private ImageView mShowAdditionalHeadersIcon;
 
     /**
      * Pair class is only available since API Level 5, so we need
@@ -79,7 +82,6 @@ public class MessageHeader extends LinearLayout {
     }
 
     private void initializeLayout() {
-        mAttachmentIcon = findViewById(R.id.attachment);
         mAnsweredIcon = findViewById(R.id.answered);
         mFromView = (TextView) findViewById(R.id.from);
         mToView = (TextView) findViewById(R.id.to);
@@ -89,17 +91,20 @@ public class MessageHeader extends LinearLayout {
         mSubjectView = (TextView) findViewById(R.id.subject);
         mAdditionalHeadersView = (TextView) findViewById(R.id.additional_headers_view);
         mChip = findViewById(R.id.chip);
+        mChip2 = findViewById(R.id.chip2);
         mDateView = (TextView) findViewById(R.id.date);
         mTimeView = (TextView) findViewById(R.id.time);
         mFlagged = (CheckBox) findViewById(R.id.flagged);
+        mShowAdditionalHeadersIcon = (ImageView) findViewById(R.id.show_additional_headers_icon);
+
 
         defaultSubjectColor = mSubjectView.getCurrentTextColor();
         mSubjectView.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewSubject());
         mTimeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewTime());
         mDateView.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewDate());
         mAdditionalHeadersView.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewAdditionalHeaders());
-        mAdditionalHeadersView.setVisibility(View.GONE);
-        mAttachmentIcon.setVisibility(View.GONE);
+        hideAdditionalHeaders();
+
         mAnsweredIcon.setVisibility(View.GONE);
         mFromView.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewSender());
         mToView.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewTo());
@@ -107,29 +112,38 @@ public class MessageHeader extends LinearLayout {
         ((TextView) findViewById(R.id.to_label)).setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewTo());
         ((TextView) findViewById(R.id.cc_label)).setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getMessageViewCC());
 
-        setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onShowAdditionalHeaders();
-            }
-        });
+        findViewById(R.id.show_additional_headers_area).setOnClickListener(this);
+        mFromView.setOnClickListener(this);
+    }
 
-        mFromView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mMessage != null) {
-                    try {
-                        final Address senderEmail = mMessage.getFrom()[0];
-                        mContacts.createContact(senderEmail);
-                    } catch (Exception e) {
-                        Log.e(K9.LOG_TAG, "Couldn't create contact", e);
-                    }
-                }
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.show_additional_headers_area: {
+                onShowAdditionalHeaders();
+                break;
             }
-        });
+            case R.id.from: {
+                onAddSenderToContacts();
+                break;
+            }
+        }
+    }
+
+    private void onAddSenderToContacts() {
+        if (mMessage != null) {
+            try {
+                final Address senderEmail = mMessage.getFrom()[0];
+                mContacts.createContact(senderEmail);
+            } catch (Exception e) {
+                Log.e(K9.LOG_TAG, "Couldn't create contact", e);
+            }
+        }
     }
 
     public void setOnFlagListener(OnClickListener listener) {
+        if (mFlagged == null)
+            return;
         mFlagged.setOnClickListener(listener);
     }
 
@@ -149,7 +163,7 @@ public class MessageHeader extends LinearLayout {
     private void hideAdditionalHeaders() {
         mAdditionalHeadersView.setVisibility(View.GONE);
         mAdditionalHeadersView.setText("");
-
+        mShowAdditionalHeadersIcon.setImageResource(R.drawable.show_more);
     }
 
 
@@ -168,6 +182,7 @@ public class MessageHeader extends LinearLayout {
                 // Show the additional headers that we have got.
                 populateAdditionalHeadersView(additionalHeaders);
                 mAdditionalHeadersView.setVisibility(View.VISIBLE);
+                mShowAdditionalHeadersIcon.setImageResource(R.drawable.show_less);
             }
             if (!allHeadersDownloaded) {
                 /*
@@ -227,11 +242,16 @@ public class MessageHeader extends LinearLayout {
         mToView.setText(to);
         mCcContainerView.setVisibility((cc != null && cc.length() > 0) ? View.VISIBLE : View.GONE);
         mCcView.setText(cc);
-        mAttachmentIcon.setVisibility(((LocalStore.LocalMessage) message).hasAttachments() ? View.VISIBLE : View.GONE);
         mAnsweredIcon.setVisibility(message.isSet(Flag.ANSWERED) ? View.VISIBLE : View.GONE);
         mFlagged.setChecked(message.isSet(Flag.FLAGGED));
-        mChip.setBackgroundDrawable(mAccount.generateColorChip().drawable());
-        mChip.getBackground().setAlpha(!message.isSet(Flag.SEEN) ? 255 : 127);
+
+        int chipColor = mAccount.getChipColor();
+        int chipColorAlpha = (!message.isSet(Flag.SEEN)) ? 255 : 127;
+        mChip.setBackgroundColor(chipColor);
+        mChip.getBackground().setAlpha(chipColorAlpha);
+        mChip2.setBackgroundColor(chipColor);
+        mChip2.getBackground().setAlpha(chipColorAlpha);
+
         setVisibility(View.VISIBLE);
         if (mAdditionalHeadersView.getVisibility() == View.VISIBLE) {
             showAdditionalHeaders();
