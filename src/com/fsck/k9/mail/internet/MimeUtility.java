@@ -2210,6 +2210,8 @@ public class MimeUtility {
     }
 
     public static String getJisVariantFromAddress(String address) {
+        if (address == null)
+            return null;
         if (isInDomain(address, "docomo.ne.jp") || isInDomain(address, "dwmail.jp") ||
                 isInDomain(address, "pdx.ne.jp") || isInDomain(address, "willcom.com"))
             return "docomo";
