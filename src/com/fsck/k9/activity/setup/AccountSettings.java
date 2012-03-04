@@ -395,7 +395,7 @@ public class AccountSettings extends K9PreferenceActivity {
 
         if (!mAccount.isSearchByDateCapable()) {
             ((PreferenceScreen) findPreference(PREFERENCE_SCREEN_INCOMING)).removePreference(mMessageAge);
-       } else {
+        } else {
             mMessageAge.setValue(String.valueOf(mAccount.getMaximumPolledMessageAge()));
             mMessageAge.setSummary(mMessageAge.getEntry());
             mMessageAge.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
