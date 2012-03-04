@@ -949,7 +949,7 @@ public class MessageView extends K9Activity implements OnClickListener {
         }
         return super.onPrepareOptionsMenu(menu);
     }
-
+    
     class Listener extends MessagingListener {
         @Override
         public void loadMessageForViewHeadersAvailable(final Account account, String folder, String uid,
