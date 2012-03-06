@@ -938,7 +938,7 @@ public class MessagingController implements Runnable {
                  * Open the remote folder. This pre-loads certain meta data like message count.
                  */
                 if (K9.DEBUG)
-                    Log.v(K9.LOG_TAG, "SYNC: About to open remote folder " + folder);
+                    Log.v(K9.LOG_TAG, "SYNC: About to open remote folder " + remoteFolder);
 
                 remoteFolder.open(OpenMode.READ_WRITE);
                 if (Account.EXPUNGE_ON_POLL.equals(account.getExpungePolicy())) {
