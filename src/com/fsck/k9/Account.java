@@ -18,6 +18,7 @@ import com.fsck.k9.mail.store.StorageManager;
 import com.fsck.k9.mail.store.StorageManager.StorageProvider;
 import com.fsck.k9.view.ColorChip;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -154,6 +155,7 @@ public class Account implements BaseAccount {
     private boolean mCryptoAutoEncrypt;
     private String mMessageCharset;
     private boolean mShowSender;
+    private boolean mMarkMessageAsReadOnView;
 
     private CryptoProvider mCryptoProvider = null;
 
@@ -244,6 +246,7 @@ public class Account implements BaseAccount {
         mShowSender = false;
 
         mEnabled = true;
+        mMarkMessageAsReadOnView = true;
 
         searchableFolders = Searchable.ALL;
 
@@ -402,9 +405,11 @@ public class Account implements BaseAccount {
         mShowSender = prefs.getBoolean(mUuid + ".showSender", false);
 
         mEnabled = prefs.getBoolean(mUuid + ".enabled", true);
+        mMarkMessageAsReadOnView = prefs.getBoolean(mUuid + ".markMessageAsReadOnView", true);
         mSyncKey = prefs.getString(mUuid + ".syncKey", "");
         mSecurityKey = prefs.getString(mUuid + ".securityKey", "");
     }
+
 
     protected synchronized void delete(Preferences preferences) {
         // Get the list of account UUIDs
@@ -486,6 +491,9 @@ public class Account implements BaseAccount {
         editor.remove(mUuid + ".enabled");
         editor.remove(mUuid + ".enableMoveButtons");
         editor.remove(mUuid + ".hideMoveButtonsEnum");
+        editor.remove(mUuid + ".markMessageAsReadOnView");
+        editor.remove(mUuid + ".syncKey");
+        editor.remove(mUuid + ".securityKey");
         for (String type : networkTypes) {
             editor.remove(mUuid + ".useCompression." + type);
         }
@@ -646,6 +654,7 @@ public class Account implements BaseAccount {
         editor.putBoolean(mUuid + ".showSender", mShowSender);
 
         editor.putBoolean(mUuid + ".enabled", mEnabled);
+        editor.putBoolean(mUuid + ".markMessageAsReadOnView", mMarkMessageAsReadOnView);
         editor.putString(mUuid + ".syncKey", mSyncKey);
         editor.putString(mUuid + ".securityKey", mSecurityKey);
 
@@ -1576,5 +1585,13 @@ public class Account implements BaseAccount {
 
     public synchronized void setEnabled(boolean enabled) {
         mEnabled = enabled;
+    }
+
+    public synchronized boolean isMarkMessageAsReadOnView() {
+        return mMarkMessageAsReadOnView;
+    }
+
+    public synchronized void setMarkMessageAsReadOnView(boolean value) {
+        mMarkMessageAsReadOnView = value;
     }
 }

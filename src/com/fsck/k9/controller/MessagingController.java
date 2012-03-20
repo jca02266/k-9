@@ -451,7 +451,7 @@ public class MessagingController implements Runnable {
         }
     }
 
-    private void doRefreshRemote(final Account account, MessagingListener listener) {
+    private void doRefreshRemote(final Account account, final MessagingListener listener) {
         // It is possible that multiple threads may try to refresh the same account at the same time.
         // Currently, this can happen immediately after the account is setup initially, and is
         // generally a bad thing. Let's use a hack to prevent this from happening.
@@ -460,14 +460,14 @@ public class MessagingController implements Runnable {
             put("doRefreshRemote", listener, new Runnable() {
                 @Override
                 public void run() {
-                    doRefreshRemoteSynchronous(account);
+                    doRefreshRemoteSynchronous(account, listener);
                     mCurrentlyRefreshing.remove(account);
                 }
             });
         }
     }
     
-    private void doRefreshRemoteSynchronous(final Account account) {
+    private void doRefreshRemoteSynchronous(final Account account, final MessagingListener listener) {
         List<? extends Folder> localFolders = null;
         try {
             Store remoteStore = account.getRemoteStore();
@@ -482,14 +482,14 @@ public class MessagingController implements Runnable {
             localFolders = localStore.getPersonalNamespaces(false);
             Folder[] folderArray = localFolders.toArray(EMPTY_FOLDER_ARRAY);
 
-            for (MessagingListener l : getListeners()) {
+            for (MessagingListener l : getListeners(listener)) {
                 l.listFolders(account, folderArray);
             }
-            for (MessagingListener l : getListeners()) {
+            for (MessagingListener l : getListeners(listener)) {
                 l.listFoldersFinished(account);
             }
         } catch (Exception e) {
-            for (MessagingListener l : getListeners()) {
+            for (MessagingListener l : getListeners(listener)) {
                 l.listFoldersFailed(account, "");
             }
             addErrorMessage(account, null, e);
@@ -3000,7 +3000,7 @@ public class MessagingController implements Runnable {
                     || message.getId() == 0) {
                         throw new IllegalArgumentException("Message not found: folder=" + folder + ", uid=" + uid);
                     }
-                    if (!message.isSet(Flag.SEEN)) {
+                    if (account.isMarkMessageAsReadOnView() && !message.isSet(Flag.SEEN)) {
                         message.setFlag(Flag.SEEN, true);
                         setFlag(new Message[] { message }, Flag.SEEN, true);
                     }
