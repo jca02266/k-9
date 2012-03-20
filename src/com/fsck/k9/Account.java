@@ -18,6 +18,7 @@ import com.fsck.k9.mail.store.StorageManager;
 import com.fsck.k9.mail.store.StorageManager.StorageProvider;
 import com.fsck.k9.view.ColorChip;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -151,6 +152,7 @@ public class Account implements BaseAccount {
     private String mSyncKey;
     private String mSecurityKey;
     private boolean mCryptoAutoEncrypt;
+    private boolean mMarkMessageAsReadOnView;
 
     private CryptoProvider mCryptoProvider = null;
 
@@ -238,6 +240,7 @@ public class Account implements BaseAccount {
         mCryptoAutoSignature = false;
         mCryptoAutoEncrypt = false;
         mEnabled = true;
+        mMarkMessageAsReadOnView = true;
 
         searchableFolders = Searchable.ALL;
 
@@ -393,93 +396,99 @@ public class Account implements BaseAccount {
         mCryptoAutoSignature = prefs.getBoolean(mUuid + ".cryptoAutoSignature", false);
         mCryptoAutoEncrypt = prefs.getBoolean(mUuid + ".cryptoAutoEncrypt", false);
         mEnabled = prefs.getBoolean(mUuid + ".enabled", true);
+        mMarkMessageAsReadOnView = prefs.getBoolean(mUuid + ".markMessageAsReadOnView", true);
         mSyncKey = prefs.getString(mUuid + ".syncKey", "");
         mSecurityKey = prefs.getString(mUuid + ".securityKey", "");
     }
 
+
     protected synchronized void delete(Preferences preferences) {
-        String uuidString = preferences.getPreferences().getString("accountUuids", "");
-        if (uuidString.contains(mUuid)) {
-            String[] uuids = uuidString.split(",");
-            String[] newUuids = new String[uuids.length - 1];
-            int i = 0;
-            for (String uuid : uuids) {
-                if (uuid.equals(mUuid) == false) {
-                    newUuids[i++] = uuid;
-                }
-            }
+        // Get the list of account UUIDs
+        String[] uuids = preferences.getPreferences().getString("accountUuids", "").split(",");
 
-            String accountUuids = Utility.combine(newUuids, ',');
-            SharedPreferences.Editor editor = preferences.getPreferences().edit();
-            editor.putString("accountUuids", accountUuids);
-
-            editor.remove(mUuid + ".storeUri");
-            editor.remove(mUuid + ".localStoreUri");
-            editor.remove(mUuid + ".transportUri");
-            editor.remove(mUuid + ".description");
-            editor.remove(mUuid + ".name");
-            editor.remove(mUuid + ".email");
-            editor.remove(mUuid + ".alwaysBcc");
-            editor.remove(mUuid + ".automaticCheckIntervalMinutes");
-            editor.remove(mUuid + ".pushPollOnConnect");
-            editor.remove(mUuid + ".saveAllHeaders");
-            editor.remove(mUuid + ".idleRefreshMinutes");
-            editor.remove(mUuid + ".lastAutomaticCheckTime");
-            editor.remove(mUuid + ".latestOldMessageSeenTime");
-            editor.remove(mUuid + ".notifyNewMail");
-            editor.remove(mUuid + ".notifySelfNewMail");
-            editor.remove(mUuid + ".deletePolicy");
-            editor.remove(mUuid + ".draftsFolderName");
-            editor.remove(mUuid + ".sentFolderName");
-            editor.remove(mUuid + ".trashFolderName");
-            editor.remove(mUuid + ".archiveFolderName");
-            editor.remove(mUuid + ".spamFolderName");
-            editor.remove(mUuid + ".autoExpandFolderName");
-            editor.remove(mUuid + ".accountNumber");
-            editor.remove(mUuid + ".vibrate");
-            editor.remove(mUuid + ".vibratePattern");
-            editor.remove(mUuid + ".vibrateTimes");
-            editor.remove(mUuid + ".ring");
-            editor.remove(mUuid + ".ringtone");
-            editor.remove(mUuid + ".lastFullSync");
-            editor.remove(mUuid + ".folderDisplayMode");
-            editor.remove(mUuid + ".folderSyncMode");
-            editor.remove(mUuid + ".folderPushMode");
-            editor.remove(mUuid + ".folderTargetMode");
-            editor.remove(mUuid + ".hideButtonsEnum");
-            editor.remove(mUuid + ".signatureBeforeQuotedText");
-            editor.remove(mUuid + ".expungePolicy");
-            editor.remove(mUuid + ".syncRemoteDeletions");
-            editor.remove(mUuid + ".maxPushFolders");
-            editor.remove(mUuid + ".searchableFolders");
-            editor.remove(mUuid + ".chipColor");
-            editor.remove(mUuid + ".led");
-            editor.remove(mUuid + ".ledColor");
-            editor.remove(mUuid + ".goToUnreadMessageSearch");
-            editor.remove(mUuid + ".notificationUnreadCount");
-            editor.remove(mUuid + ".subscribedFoldersOnly");
-            editor.remove(mUuid + ".maximumPolledMessageAge");
-            editor.remove(mUuid + ".maximumAutoDownloadMessageSize");
-            editor.remove(mUuid + ".messageFormatAuto");
-            editor.remove(mUuid + ".quoteStyle");
-            editor.remove(mUuid + ".quotePrefix");
-            editor.remove(mUuid + ".showPicturesEnum");
-            editor.remove(mUuid + ".replyAfterQuote");
-            editor.remove(mUuid + ".stripSignature");
-            editor.remove(mUuid + ".cryptoApp");
-            editor.remove(mUuid + ".cryptoAutoSignature");
-            editor.remove(mUuid + ".cryptoAutoEncrypt");
-            editor.remove(mUuid + ".enabled");
-            editor.remove(mUuid + ".syncKey");
-            editor.remove(mUuid + ".securityKey");
-            editor.remove(mUuid + ".enableMoveButtons");
-            editor.remove(mUuid + ".hideMoveButtonsEnum");
-            for (String type : networkTypes) {
-                editor.remove(mUuid + ".useCompression." + type);
+        // Create a list of all account UUIDs excluding this account
+        List<String> newUuids = new ArrayList<String>(uuids.length);
+        for (String uuid : uuids) {
+            if (!uuid.equals(mUuid)) {
+                newUuids.add(uuid);
             }
-            deleteIdentities(preferences.getPreferences(), editor);
-            editor.commit();
         }
+
+        SharedPreferences.Editor editor = preferences.getPreferences().edit();
+
+        // Only change the 'accountUuids' value if this account's UUID was listed before
+        if (newUuids.size() < uuids.length) {
+            String accountUuids = Utility.combine(newUuids.toArray(), ',');
+            editor.putString("accountUuids", accountUuids);
+        }
+
+        editor.remove(mUuid + ".storeUri");
+        editor.remove(mUuid + ".localStoreUri");
+        editor.remove(mUuid + ".transportUri");
+        editor.remove(mUuid + ".description");
+        editor.remove(mUuid + ".name");
+        editor.remove(mUuid + ".email");
+        editor.remove(mUuid + ".alwaysBcc");
+        editor.remove(mUuid + ".automaticCheckIntervalMinutes");
+        editor.remove(mUuid + ".pushPollOnConnect");
+        editor.remove(mUuid + ".saveAllHeaders");
+        editor.remove(mUuid + ".idleRefreshMinutes");
+        editor.remove(mUuid + ".lastAutomaticCheckTime");
+        editor.remove(mUuid + ".latestOldMessageSeenTime");
+        editor.remove(mUuid + ".notifyNewMail");
+        editor.remove(mUuid + ".notifySelfNewMail");
+        editor.remove(mUuid + ".deletePolicy");
+        editor.remove(mUuid + ".draftsFolderName");
+        editor.remove(mUuid + ".sentFolderName");
+        editor.remove(mUuid + ".trashFolderName");
+        editor.remove(mUuid + ".archiveFolderName");
+        editor.remove(mUuid + ".spamFolderName");
+        editor.remove(mUuid + ".autoExpandFolderName");
+        editor.remove(mUuid + ".accountNumber");
+        editor.remove(mUuid + ".vibrate");
+        editor.remove(mUuid + ".vibratePattern");
+        editor.remove(mUuid + ".vibrateTimes");
+        editor.remove(mUuid + ".ring");
+        editor.remove(mUuid + ".ringtone");
+        editor.remove(mUuid + ".lastFullSync");
+        editor.remove(mUuid + ".folderDisplayMode");
+        editor.remove(mUuid + ".folderSyncMode");
+        editor.remove(mUuid + ".folderPushMode");
+        editor.remove(mUuid + ".folderTargetMode");
+        editor.remove(mUuid + ".hideButtonsEnum");
+        editor.remove(mUuid + ".signatureBeforeQuotedText");
+        editor.remove(mUuid + ".expungePolicy");
+        editor.remove(mUuid + ".syncRemoteDeletions");
+        editor.remove(mUuid + ".maxPushFolders");
+        editor.remove(mUuid + ".searchableFolders");
+        editor.remove(mUuid + ".chipColor");
+        editor.remove(mUuid + ".led");
+        editor.remove(mUuid + ".ledColor");
+        editor.remove(mUuid + ".goToUnreadMessageSearch");
+        editor.remove(mUuid + ".notificationUnreadCount");
+        editor.remove(mUuid + ".subscribedFoldersOnly");
+        editor.remove(mUuid + ".maximumPolledMessageAge");
+        editor.remove(mUuid + ".maximumAutoDownloadMessageSize");
+        editor.remove(mUuid + ".messageFormatAuto");
+        editor.remove(mUuid + ".quoteStyle");
+        editor.remove(mUuid + ".quotePrefix");
+        editor.remove(mUuid + ".showPicturesEnum");
+        editor.remove(mUuid + ".replyAfterQuote");
+        editor.remove(mUuid + ".stripSignature");
+        editor.remove(mUuid + ".cryptoApp");
+        editor.remove(mUuid + ".cryptoAutoSignature");
+        editor.remove(mUuid + ".cryptoAutoEncrypt");
+        editor.remove(mUuid + ".enabled");
+        editor.remove(mUuid + ".enableMoveButtons");
+        editor.remove(mUuid + ".hideMoveButtonsEnum");
+        editor.remove(mUuid + ".markMessageAsReadOnView");
+        editor.remove(mUuid + ".syncKey");
+        editor.remove(mUuid + ".securityKey");
+        for (String type : networkTypes) {
+            editor.remove(mUuid + ".useCompression." + type);
+        }
+        deleteIdentities(preferences.getPreferences(), editor);
+        editor.commit();
     }
 
     public static int findNewAccountNumber(List<Integer> accountNumbers) {
@@ -632,6 +641,7 @@ public class Account implements BaseAccount {
         editor.putBoolean(mUuid + ".cryptoAutoSignature", mCryptoAutoSignature);
         editor.putBoolean(mUuid + ".cryptoAutoEncrypt", mCryptoAutoEncrypt);
         editor.putBoolean(mUuid + ".enabled", mEnabled);
+        editor.putBoolean(mUuid + ".markMessageAsReadOnView", mMarkMessageAsReadOnView);
         editor.putString(mUuid + ".syncKey", mSyncKey);
         editor.putString(mUuid + ".securityKey", mSecurityKey);
 
@@ -1546,5 +1556,13 @@ public class Account implements BaseAccount {
 
     public synchronized void setEnabled(boolean enabled) {
         mEnabled = enabled;
+    }
+
+    public synchronized boolean isMarkMessageAsReadOnView() {
+        return mMarkMessageAsReadOnView;
+    }
+
+    public synchronized void setMarkMessageAsReadOnView(boolean value) {
+        mMarkMessageAsReadOnView = value;
     }
 }
