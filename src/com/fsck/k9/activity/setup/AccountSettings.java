@@ -97,7 +97,6 @@ public class AccountSettings extends K9PreferenceActivity {
     private static final String PREFERENCE_CRYPTO_AUTO_ENCRYPT = "crypto_auto_encrypt";
     private static final String PREFERENCE_LOCAL_STORAGE_PROVIDER = "local_storage_provider";
     private static final String PREFERENCE_MESSAGE_CHARSET = "message_charset";
-    private static final String PREFERENCE_SHOW_SENDER = "show_sender";
 
     private static final String PREFERENCE_CATEGORY_FOLDERS = "folders";
     private static final String PREFERENCE_ARCHIVE_FOLDER = "archive_folder";
@@ -161,7 +160,6 @@ public class AccountSettings extends K9PreferenceActivity {
     private CheckBoxPreference mCryptoAutoSignature;
     private CheckBoxPreference mCryptoAutoEncrypt;
     private ListPreference mMessageCharset;
-    private CheckBoxPreference mShowSender;
 
     private ListPreference mLocalStorageProvider;
     private ListPreference mArchiveFolder;
@@ -673,9 +671,6 @@ public class AccountSettings extends K9PreferenceActivity {
                 return false;
             }
         });
-
-        mShowSender = (CheckBoxPreference)findPreference(PREFERENCE_SHOW_SENDER);
-        mShowSender.setChecked(mAccount.isShowSender());
     }
 
     private void handleCryptoAppDependencies() {
@@ -730,8 +725,6 @@ public class AccountSettings extends K9PreferenceActivity {
         mAccount.setLocalStorageProviderId(mLocalStorageProvider.getValue());
 
         mAccount.setMessageCharset(mMessageCharset.getValue());
-        mAccount.setShowSender(mShowSender.isChecked());
-
 
         // In webdav account we use the exact folder name also for inbox,
         // since it varies because of internationalization

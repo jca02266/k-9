@@ -154,7 +154,6 @@ public class Account implements BaseAccount {
     private String mSecurityKey;
     private boolean mCryptoAutoEncrypt;
     private String mMessageCharset;
-    private boolean mShowSender;
     private boolean mMarkMessageAsReadOnView;
 
     private CryptoProvider mCryptoProvider = null;
@@ -243,8 +242,6 @@ public class Account implements BaseAccount {
         mCryptoAutoSignature = false;
         mCryptoAutoEncrypt = false;
         mMessageCharset = DEFAULT_MESSAGE_CHARSET;
-        mShowSender = false;
-
         mEnabled = true;
         mMarkMessageAsReadOnView = true;
 
@@ -402,8 +399,6 @@ public class Account implements BaseAccount {
         mCryptoAutoSignature = prefs.getBoolean(mUuid + ".cryptoAutoSignature", false);
         mCryptoAutoEncrypt = prefs.getBoolean(mUuid + ".cryptoAutoEncrypt", false);
         mMessageCharset = prefs.getString(mUuid + ".messageCharset", "UTF-8");
-        mShowSender = prefs.getBoolean(mUuid + ".showSender", false);
-
         mEnabled = prefs.getBoolean(mUuid + ".enabled", true);
         mMarkMessageAsReadOnView = prefs.getBoolean(mUuid + ".markMessageAsReadOnView", true);
         mSyncKey = prefs.getString(mUuid + ".syncKey", "");
@@ -487,7 +482,6 @@ public class Account implements BaseAccount {
         editor.remove(mUuid + ".cryptoApp");
         editor.remove(mUuid + ".cryptoAutoSignature");
         editor.remove(mUuid + ".cryptoAutoEncrypt");
-        editor.remove(mUuid + ".showSender");
         editor.remove(mUuid + ".enabled");
         editor.remove(mUuid + ".enableMoveButtons");
         editor.remove(mUuid + ".hideMoveButtonsEnum");
@@ -651,8 +645,6 @@ public class Account implements BaseAccount {
         editor.putBoolean(mUuid + ".cryptoAutoSignature", mCryptoAutoSignature);
         editor.putBoolean(mUuid + ".cryptoAutoEncrypt", mCryptoAutoEncrypt);
         editor.putString(mUuid + ".messageCharset", mMessageCharset);
-        editor.putBoolean(mUuid + ".showSender", mShowSender);
-
         editor.putBoolean(mUuid + ".enabled", mEnabled);
         editor.putBoolean(mUuid + ".markMessageAsReadOnView", mMarkMessageAsReadOnView);
         editor.putString(mUuid + ".syncKey", mSyncKey);
@@ -1557,14 +1549,6 @@ public class Account implements BaseAccount {
 
     public synchronized NotificationSetting getNotificationSetting() {
         return mNotificationSetting;
-    }
-
-    public boolean isShowSender() {
-        return mShowSender;
-    }
-
-    public void setShowSender(boolean showSender) {
-        mShowSender = showSender;
     }
 
     /**
