@@ -419,7 +419,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
         if (mAccount.getIdentities().size() == 1 &&
                 Preferences.getPreferences(this).getAvailableAccounts().size() == 1) {
-            findViewById(R.id.identity_container).setVisibility(View.GONE);
+            mChooseIdentityButton.setVisibility(View.GONE);
         }
 
         mToView = (MultiAutoCompleteTextView) findViewById(R.id.to);
@@ -1867,7 +1867,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     }
 
     private void updateFrom() {
-        mChooseIdentityButton.setText(getIdentityDescription(mIdentity));
+        mChooseIdentityButton.setText(mIdentity.getEmail());
     }
 
     private void updateSignature() {
@@ -3251,17 +3251,20 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
 
             View view = null;
             if (item instanceof Account) {
-                if (convertView != null && convertView.getTag() instanceof TextView) {
+                if (convertView != null && convertView.getTag() instanceof AccountHolder) {
                     view = convertView;
                 } else {
                     view = mLayoutInflater.inflate(R.layout.choose_account_item, parent, false);
-                    TextView name = (TextView) view.findViewById(R.id.name);
-                    view.setTag(name);
+                    AccountHolder holder = new AccountHolder();
+                    holder.name = (TextView) view.findViewById(R.id.name);
+                    holder.chip = view.findViewById(R.id.chip);
+                    view.setTag(holder);
                 }
 
                 Account account = (Account) item;
-                TextView name = (TextView) view.getTag();
-                name.setText(account.getDescription());
+                AccountHolder holder = (AccountHolder) view.getTag();
+                holder.name.setText(account.getDescription());
+                holder.chip.setBackgroundColor(account.getChipColor());
             } else if (item instanceof IdentityContainer) {
                 if (convertView != null && convertView.getTag() instanceof IdentityHolder) {
                     view = convertView;
@@ -3269,29 +3272,28 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                     view = mLayoutInflater.inflate(R.layout.choose_identity_item, parent, false);
                     IdentityHolder holder = new IdentityHolder();
                     holder.name = (TextView) view.findViewById(R.id.name);
-                    holder.name.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getAccountName());
                     holder.description = (TextView) view.findViewById(R.id.description);
-                    holder.description.setTextSize(TypedValue.COMPLEX_UNIT_SP, mFontSizes.getAccountDescription());
-                    holder.chip = view.findViewById(R.id.chip);
                     view.setTag(holder);
                 }
 
                 IdentityContainer identityContainer = (IdentityContainer) item;
                 Identity identity = identityContainer.identity;
-                Account account = identityContainer.account;
                 IdentityHolder holder = (IdentityHolder) view.getTag();
                 holder.name.setText(identity.getDescription());
                 holder.description.setText(getIdentityDescription(identity));
-                holder.chip.setBackgroundColor(account.getChipColor());
             }
 
             return view;
         }
 
+        static class AccountHolder {
+            public TextView name;
+            public View chip;
+        }
+
         static class IdentityHolder {
             public TextView name;
             public TextView description;
-            public View chip;
         }
     }
 
