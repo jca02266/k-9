@@ -41,6 +41,8 @@ import com.fsck.k9.service.ShutdownReceiver;
 import com.fsck.k9.service.StorageGoneReceiver;
 
 public class K9 extends Application {
+    public static final int THEME_LIGHT = 0;
+    public static final int THEME_DARK = 1;
 
     public static void updateUnreadWidget(Context context) {
         try {
@@ -86,7 +88,7 @@ public class K9 extends Application {
     }
 
     private static String language = "";
-    private static int theme = android.R.style.Theme_Light;
+    private static int theme = THEME_LIGHT;
 
     private static final FontSizes fontSizes = new FontSizes();
 
@@ -583,7 +585,17 @@ public class K9 extends Application {
         }
 
         K9.setK9Language(sprefs.getString("language", ""));
-        K9.setK9Theme(sprefs.getInt("theme", android.R.style.Theme_Light));
+
+        int theme = sprefs.getInt("theme", THEME_LIGHT);
+
+        // We used to save the resource ID of the theme. So convert that to the new format if
+        // necessary.
+        if (theme == THEME_DARK || theme == android.R.style.Theme) {
+            theme = THEME_DARK;
+        } else {
+            theme = THEME_LIGHT;
+        }
+        K9.setK9Theme(theme);
     }
 
     private void maybeSetupStrictMode() {
@@ -638,6 +650,14 @@ public class K9 extends Application {
 
     public static void setK9Language(String nlanguage) {
         language = nlanguage;
+    }
+
+    public static int getK9ThemeResourceId(int theme) {
+        return (theme == THEME_LIGHT) ? android.R.style.Theme_Light : android.R.style.Theme;
+    }
+
+    public static int getK9ThemeResourceId() {
+        return getK9ThemeResourceId(theme);
     }
 
     public static int getK9Theme() {
