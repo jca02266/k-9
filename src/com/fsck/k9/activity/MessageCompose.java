@@ -377,6 +377,7 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setTheme(K9.getK9ThemeResourceId(K9.THEME_LIGHT));
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.message_compose);
 
@@ -2383,7 +2384,15 @@ public class MessageCompose extends K9Activity implements OnClickListener, OnFoc
                 if (k9identity.containsKey(IdentityField.ORIGINAL_MESSAGE)) {
                     mMessageReference = null;
                     try {
-                        mMessageReference = new MessageReference(k9identity.get(IdentityField.ORIGINAL_MESSAGE));
+                        String originalMessage = k9identity.get(IdentityField.ORIGINAL_MESSAGE);
+                        MessageReference messageReference = new MessageReference(originalMessage);
+
+                        // Check if this is a valid account in our database
+                        Preferences prefs = Preferences.getPreferences(getApplicationContext());
+                        Account account = prefs.getAccount(messageReference.accountUuid);
+                        if (account != null) {
+                            mMessageReference = messageReference;
+                        }
                     } catch (MessagingException e) {
                         Log.e(K9.LOG_TAG, "Could not decode message reference in identity.", e);
                     }
