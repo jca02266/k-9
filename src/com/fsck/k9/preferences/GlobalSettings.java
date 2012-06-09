@@ -12,9 +12,11 @@ import java.util.TreeMap;
 import android.content.SharedPreferences;
 import android.os.Environment;
 
+import com.fsck.k9.Account;
 import com.fsck.k9.FontSizes;
 import com.fsck.k9.K9;
 import com.fsck.k9.R;
+import com.fsck.k9.Account.SortType;
 import com.fsck.k9.helper.DateFormatter;
 import com.fsck.k9.preferences.Settings.*;
 
@@ -25,6 +27,11 @@ public class GlobalSettings {
     static {
         Map<String, TreeMap<Integer, SettingsDescription>> s =
             new LinkedHashMap<String, TreeMap<Integer, SettingsDescription>>();
+
+        /**
+         * When adding new settings here, be sure to increment {@link Settings.VERSION}
+         * and use that for whatever you add here.
+         */
 
         s.put("animations", Settings.versions(
                 new V(1, new BooleanSetting(false))
@@ -177,6 +184,12 @@ public class GlobalSettings {
         s.put("showCorrespondentNames", Settings.versions(
                 new V(1, new BooleanSetting(true))
             ));
+        s.put("sortTypeEnum", Settings.versions(
+                new V(10, new EnumSetting(SortType.class, Account.DEFAULT_SORT_TYPE))
+            ));
+        s.put("sortAscending", Settings.versions(
+                new V(10, new BooleanSetting(Account.DEFAULT_SORT_ASCENDING))
+            ));
         s.put("startIntegratedInbox", Settings.versions(
                 new V(1, new BooleanSetting(false))
             ));
@@ -195,6 +208,24 @@ public class GlobalSettings {
         s.put("zoomControlsEnabled", Settings.versions(
                 new V(1, new BooleanSetting(false)),
                 new V(4, new BooleanSetting(true))
+            ));
+        s.put("batchButtonsMarkRead", Settings.versions(
+                new V(8, new BooleanSetting(true))
+            ));
+        s.put("batchButtonsDelete", Settings.versions(
+                new V(8, new BooleanSetting(true))
+            ));
+        s.put("batchButtonsArchive", Settings.versions(
+                new V(8, new BooleanSetting(false))
+            ));
+        s.put("batchButtonsMove", Settings.versions(
+                new V(8, new BooleanSetting(false))
+            ));
+        s.put("batchButtonsFlag", Settings.versions(
+                new V(8, new BooleanSetting(true))
+            ));
+        s.put("batchButtonsUnselect", Settings.versions(
+                new V(8, new BooleanSetting(true))
             ));
 
         SETTINGS = Collections.unmodifiableMap(s);

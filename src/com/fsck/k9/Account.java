@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +79,40 @@ public class Account implements BaseAccount {
     public static final String IDENTITY_EMAIL_KEY = "email";
     public static final String IDENTITY_DESCRIPTION_KEY = "description";
 
+    public enum SortType {
+        SORT_DATE(R.string.sort_earliest_first, R.string.sort_latest_first, false),
+        SORT_ARRIVAL(R.string.sort_earliest_first, R.string.sort_latest_first, false),
+        SORT_SUBJECT(R.string.sort_subject_alpha, R.string.sort_subject_re_alpha, true),
+        SORT_SENDER(R.string.sort_sender_alpha, R.string.sort_sender_re_alpha, true),
+        SORT_UNREAD(R.string.sort_unread_first, R.string.sort_unread_last, true),
+        SORT_FLAGGED(R.string.sort_flagged_first, R.string.sort_flagged_last, true),
+        SORT_ATTACHMENT(R.string.sort_attach_first, R.string.sort_unattached_first, true);
+
+        private int ascendingToast;
+        private int descendingToast;
+        private boolean defaultAscending;
+
+        SortType(int ascending, int descending, boolean ndefaultAscending) {
+            ascendingToast = ascending;
+            descendingToast = descending;
+            defaultAscending = ndefaultAscending;
+        }
+
+        public int getToast(boolean ascending) {
+            if (ascending) {
+                return ascendingToast;
+            } else {
+                return descendingToast;
+            }
+        }
+        public boolean isDefaultAscending() {
+            return defaultAscending;
+        }
+    }
+
+    public static final SortType DEFAULT_SORT_TYPE = SortType.SORT_DATE;
+    public static final boolean DEFAULT_SORT_ASCENDING = false;
+
 
     /**
      * <pre>
@@ -122,6 +157,8 @@ public class Account implements BaseAccount {
     private boolean mSaveAllHeaders;
     private boolean mPushPollOnConnect;
     private boolean mNotifySync;
+    private SortType mSortType;
+    private HashMap<SortType, Boolean> mSortAscending = new HashMap<SortType, Boolean>();
     private ShowPictures mShowPictures;
     private boolean mEnableMoveButtons;
     private boolean mIsSignatureBeforeQuotedText;
@@ -216,6 +253,8 @@ public class Account implements BaseAccount {
         mFolderSyncMode = FolderMode.FIRST_CLASS;
         mFolderPushMode = FolderMode.FIRST_CLASS;
         mFolderTargetMode = FolderMode.NOT_SECOND_CLASS;
+        mSortType = DEFAULT_SORT_TYPE;
+        mSortAscending.put(DEFAULT_SORT_TYPE, DEFAULT_SORT_ASCENDING);
         mShowPictures = ShowPictures.NEVER;
         mEnableMoveButtons = false;
         mIsSignatureBeforeQuotedText = false;
@@ -340,6 +379,15 @@ public class Account implements BaseAccount {
                                   0xff000000);
 
         try {
+            mSortType = SortType.valueOf(prefs.getString(mUuid + ".sortTypeEnum",
+                                                 SortType.SORT_DATE.name()));
+        } catch (Exception e) {
+            mSortType = SortType.SORT_DATE;
+        }
+
+        mSortAscending.put(mSortType, prefs.getBoolean(mUuid + ".sortAscending", false));
+
+        try {
             mShowPictures = ShowPictures.valueOf(prefs.getString(mUuid + ".showPicturesEnum",
                                                  ShowPictures.NEVER.name()));
         } catch (Exception e) {
@@ -400,9 +448,9 @@ public class Account implements BaseAccount {
         mCryptoAutoEncrypt = prefs.getBoolean(mUuid + ".cryptoAutoEncrypt", false);
         mMessageCharset = prefs.getString(mUuid + ".messageCharset", "UTF-8");
         mEnabled = prefs.getBoolean(mUuid + ".enabled", true);
-        mMarkMessageAsReadOnView = prefs.getBoolean(mUuid + ".markMessageAsReadOnView", true);
         mSyncKey = prefs.getString(mUuid + ".syncKey", "");
         mSecurityKey = prefs.getString(mUuid + ".securityKey", "");
+        mMarkMessageAsReadOnView = prefs.getBoolean(mUuid + ".markMessageAsReadOnView", true);
     }
 
 
@@ -424,72 +472,74 @@ public class Account implements BaseAccount {
         if (newUuids.size() < uuids.length) {
             String accountUuids = Utility.combine(newUuids.toArray(), ',');
             editor.putString("accountUuids", accountUuids);
-        }
-
-        editor.remove(mUuid + ".storeUri");
-        editor.remove(mUuid + ".localStoreUri");
-        editor.remove(mUuid + ".transportUri");
-        editor.remove(mUuid + ".description");
-        editor.remove(mUuid + ".name");
-        editor.remove(mUuid + ".email");
-        editor.remove(mUuid + ".alwaysBcc");
-        editor.remove(mUuid + ".automaticCheckIntervalMinutes");
-        editor.remove(mUuid + ".pushPollOnConnect");
-        editor.remove(mUuid + ".saveAllHeaders");
-        editor.remove(mUuid + ".idleRefreshMinutes");
-        editor.remove(mUuid + ".lastAutomaticCheckTime");
-        editor.remove(mUuid + ".latestOldMessageSeenTime");
-        editor.remove(mUuid + ".notifyNewMail");
-        editor.remove(mUuid + ".notifySelfNewMail");
-        editor.remove(mUuid + ".deletePolicy");
-        editor.remove(mUuid + ".draftsFolderName");
-        editor.remove(mUuid + ".sentFolderName");
-        editor.remove(mUuid + ".trashFolderName");
-        editor.remove(mUuid + ".archiveFolderName");
-        editor.remove(mUuid + ".spamFolderName");
-        editor.remove(mUuid + ".autoExpandFolderName");
-        editor.remove(mUuid + ".accountNumber");
-        editor.remove(mUuid + ".vibrate");
-        editor.remove(mUuid + ".vibratePattern");
-        editor.remove(mUuid + ".vibrateTimes");
-        editor.remove(mUuid + ".ring");
-        editor.remove(mUuid + ".ringtone");
-        editor.remove(mUuid + ".lastFullSync");
-        editor.remove(mUuid + ".folderDisplayMode");
-        editor.remove(mUuid + ".folderSyncMode");
-        editor.remove(mUuid + ".folderPushMode");
-        editor.remove(mUuid + ".folderTargetMode");
-        editor.remove(mUuid + ".hideButtonsEnum");
-        editor.remove(mUuid + ".signatureBeforeQuotedText");
-        editor.remove(mUuid + ".expungePolicy");
-        editor.remove(mUuid + ".syncRemoteDeletions");
-        editor.remove(mUuid + ".maxPushFolders");
-        editor.remove(mUuid + ".searchableFolders");
-        editor.remove(mUuid + ".chipColor");
-        editor.remove(mUuid + ".led");
-        editor.remove(mUuid + ".ledColor");
-        editor.remove(mUuid + ".goToUnreadMessageSearch");
-        editor.remove(mUuid + ".notificationUnreadCount");
-        editor.remove(mUuid + ".subscribedFoldersOnly");
-        editor.remove(mUuid + ".maximumPolledMessageAge");
-        editor.remove(mUuid + ".maximumAutoDownloadMessageSize");
-        editor.remove(mUuid + ".messageFormatAuto");
-        editor.remove(mUuid + ".quoteStyle");
-        editor.remove(mUuid + ".quotePrefix");
-        editor.remove(mUuid + ".showPicturesEnum");
-        editor.remove(mUuid + ".replyAfterQuote");
-        editor.remove(mUuid + ".stripSignature");
-        editor.remove(mUuid + ".cryptoApp");
-        editor.remove(mUuid + ".cryptoAutoSignature");
-        editor.remove(mUuid + ".cryptoAutoEncrypt");
-        editor.remove(mUuid + ".enabled");
-        editor.remove(mUuid + ".enableMoveButtons");
-        editor.remove(mUuid + ".hideMoveButtonsEnum");
-        editor.remove(mUuid + ".markMessageAsReadOnView");
-        editor.remove(mUuid + ".syncKey");
-        editor.remove(mUuid + ".securityKey");
-        for (String type : networkTypes) {
-            editor.remove(mUuid + ".useCompression." + type);
+            
+            editor.remove(mUuid + ".storeUri");
+            editor.remove(mUuid + ".localStoreUri");
+            editor.remove(mUuid + ".transportUri");
+            editor.remove(mUuid + ".description");
+            editor.remove(mUuid + ".name");
+            editor.remove(mUuid + ".email");
+            editor.remove(mUuid + ".alwaysBcc");
+            editor.remove(mUuid + ".automaticCheckIntervalMinutes");
+            editor.remove(mUuid + ".pushPollOnConnect");
+            editor.remove(mUuid + ".saveAllHeaders");
+            editor.remove(mUuid + ".idleRefreshMinutes");
+            editor.remove(mUuid + ".lastAutomaticCheckTime");
+            editor.remove(mUuid + ".latestOldMessageSeenTime");
+            editor.remove(mUuid + ".notifyNewMail");
+            editor.remove(mUuid + ".notifySelfNewMail");
+            editor.remove(mUuid + ".deletePolicy");
+            editor.remove(mUuid + ".draftsFolderName");
+            editor.remove(mUuid + ".sentFolderName");
+            editor.remove(mUuid + ".trashFolderName");
+            editor.remove(mUuid + ".archiveFolderName");
+            editor.remove(mUuid + ".spamFolderName");
+            editor.remove(mUuid + ".autoExpandFolderName");
+            editor.remove(mUuid + ".accountNumber");
+            editor.remove(mUuid + ".vibrate");
+            editor.remove(mUuid + ".vibratePattern");
+            editor.remove(mUuid + ".vibrateTimes");
+            editor.remove(mUuid + ".ring");
+            editor.remove(mUuid + ".ringtone");
+            editor.remove(mUuid + ".lastFullSync");
+            editor.remove(mUuid + ".folderDisplayMode");
+            editor.remove(mUuid + ".folderSyncMode");
+            editor.remove(mUuid + ".folderPushMode");
+            editor.remove(mUuid + ".folderTargetMode");
+            editor.remove(mUuid + ".hideButtonsEnum");
+            editor.remove(mUuid + ".signatureBeforeQuotedText");
+            editor.remove(mUuid + ".expungePolicy");
+            editor.remove(mUuid + ".syncRemoteDeletions");
+            editor.remove(mUuid + ".maxPushFolders");
+            editor.remove(mUuid + ".searchableFolders");
+            editor.remove(mUuid + ".chipColor");
+            editor.remove(mUuid + ".led");
+            editor.remove(mUuid + ".ledColor");
+            editor.remove(mUuid + ".goToUnreadMessageSearch");
+            editor.remove(mUuid + ".notificationUnreadCount");
+            editor.remove(mUuid + ".subscribedFoldersOnly");
+            editor.remove(mUuid + ".maximumPolledMessageAge");
+            editor.remove(mUuid + ".maximumAutoDownloadMessageSize");
+            editor.remove(mUuid + ".messageFormatAuto");
+            editor.remove(mUuid + ".quoteStyle");
+            editor.remove(mUuid + ".quotePrefix");
+            editor.remove(mUuid + ".showPicturesEnum");
+            editor.remove(mUuid + ".replyAfterQuote");
+            editor.remove(mUuid + ".stripSignature");
+            editor.remove(mUuid + ".cryptoApp");
+            editor.remove(mUuid + ".cryptoAutoSignature");
+            editor.remove(mUuid + ".cryptoAutoEncrypt");
+            editor.remove(mUuid + ".enabled");
+            editor.remove(mUuid + ".syncKey");
+            editor.remove(mUuid + ".securityKey");
+            editor.remove(mUuid + ".enableMoveButtons");
+            editor.remove(mUuid + ".hideMoveButtonsEnum");
+            editor.remove(mUuid + ".markMessageAsReadOnView");
+            for (String type : networkTypes) {
+                editor.remove(mUuid + ".useCompression." + type);
+            }
+            deleteIdentities(preferences.getPreferences(), editor);
+            editor.commit();
         }
         deleteIdentities(preferences.getPreferences(), editor);
         editor.commit();
@@ -608,6 +658,8 @@ public class Account implements BaseAccount {
         editor.putString(mUuid + ".spamFolderName", mSpamFolderName);
         editor.putString(mUuid + ".autoExpandFolderName", mAutoExpandFolderName);
         editor.putInt(mUuid + ".accountNumber", mAccountNumber);
+        editor.putString(mUuid + ".sortTypeEnum", mSortType.name());
+        editor.putBoolean(mUuid + ".sortAscending", mSortAscending.get(mSortType));
         editor.putString(mUuid + ".showPicturesEnum", mShowPictures.name());
         editor.putBoolean(mUuid + ".enableMoveButtons", mEnableMoveButtons);
         editor.putString(mUuid + ".folderDisplayMode", mFolderDisplayMode.name());
@@ -646,10 +698,9 @@ public class Account implements BaseAccount {
         editor.putBoolean(mUuid + ".cryptoAutoEncrypt", mCryptoAutoEncrypt);
         editor.putString(mUuid + ".messageCharset", mMessageCharset);
         editor.putBoolean(mUuid + ".enabled", mEnabled);
-        editor.putBoolean(mUuid + ".markMessageAsReadOnView", mMarkMessageAsReadOnView);
         editor.putString(mUuid + ".syncKey", mSyncKey);
         editor.putString(mUuid + ".securityKey", mSecurityKey);
-
+        editor.putBoolean(mUuid + ".markMessageAsReadOnView", mMarkMessageAsReadOnView);
         editor.putBoolean(mUuid + ".vibrate", mNotificationSetting.shouldVibrate());
         editor.putInt(mUuid + ".vibratePattern", mNotificationSetting.getVibratePattern());
         editor.putInt(mUuid + ".vibrateTimes", mNotificationSetting.getVibrateTimes());
@@ -948,6 +999,14 @@ public class Account implements BaseAccount {
         mDraftsFolderName = draftsFolderName;
     }
 
+    /**
+     * Checks if this account has a drafts folder set.
+     * @return true if account has a drafts folder set.
+     */
+    public synchronized boolean hasDraftsFolder() {
+        return !K9.FOLDER_NONE.equalsIgnoreCase(mDraftsFolderName);
+    }
+
     public synchronized String getSentFolderName() {
         return mSentFolderName;
     }
@@ -960,12 +1019,29 @@ public class Account implements BaseAccount {
         mSentFolderName = sentFolderName;
     }
 
+    /**
+     * Checks if this account has a sent folder set.
+     * @return true if account has a sent folder set.
+     */
+    public synchronized boolean hasSentFolder() {
+        return !K9.FOLDER_NONE.equalsIgnoreCase(mSentFolderName);
+    }
+
+
     public synchronized String getTrashFolderName() {
         return mTrashFolderName;
     }
 
     public synchronized void setTrashFolderName(String trashFolderName) {
         mTrashFolderName = trashFolderName;
+    }
+
+    /**
+     * Checks if this account has a trash folder set.
+     * @return true if account has a trash folder set.
+     */
+    public synchronized boolean hasTrashFolder() {
+        return !K9.FOLDER_NONE.equalsIgnoreCase(mTrashFolderName);
     }
 
     public synchronized String getArchiveFolderName() {
@@ -976,12 +1052,28 @@ public class Account implements BaseAccount {
         mArchiveFolderName = archiveFolderName;
     }
 
+    /**
+     * Checks if this account has an archive folder set.
+     * @return true if account has an archive folder set.
+     */
+    public synchronized boolean hasArchiveFolder() {
+        return !K9.FOLDER_NONE.equalsIgnoreCase(mArchiveFolderName);
+    }
+
     public synchronized String getSpamFolderName() {
         return mSpamFolderName;
     }
 
     public synchronized void setSpamFolderName(String spamFolderName) {
         mSpamFolderName = spamFolderName;
+    }
+
+    /**
+     * Checks if this account has a spam folder set.
+     * @return true if account has a spam folder set.
+     */
+    public synchronized boolean hasSpamFolder() {
+        return !K9.FOLDER_NONE.equalsIgnoreCase(mSpamFolderName);
     }
 
     public synchronized String getOutboxFolderName() {
@@ -1044,6 +1136,25 @@ public class Account implements BaseAccount {
 
     public synchronized void setShowOngoing(boolean showOngoing) {
         this.mNotifySync = showOngoing;
+    }
+
+    public synchronized SortType getSortType() {
+        return mSortType;
+    }
+
+    public synchronized void setSortType(SortType sortType) {
+        mSortType = sortType;
+    }
+
+    public synchronized boolean isSortAscending(SortType sortType) {
+        if (mSortAscending.get(sortType) == null) {
+            mSortAscending.put(sortType, sortType.isDefaultAscending());
+        }
+        return mSortAscending.get(sortType);
+    }
+
+    public synchronized void setSortAscending(SortType sortType, boolean sortAscending) {
+        mSortAscending.put(sortType, sortAscending);
     }
 
     public synchronized ShowPictures getShowPictures() {
@@ -1317,7 +1428,6 @@ public class Account implements BaseAccount {
      * Only to be called durin initial account-setup!<br/>
      * Side-effect: changes {@link #mLocalStorageProviderId}.
      *
-     * @param context
      * @param newStorageProviderId
      *            Never <code>null</code>.
      * @throws MessagingException

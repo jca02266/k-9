@@ -1658,13 +1658,16 @@ public class ImapStore extends Store {
 
             if (fetchList.containsKey("BODY")) {
                 int index = fetchList.getKeyIndex("BODY") + 2;
-                result = fetchList.getObject(index);
+                int size = fetchList.size();
+                if (index < size) {
+                    result = fetchList.getObject(index);
 
-                // Check if there's an origin octet
-                if (result instanceof String) {
-                    String originOctet = (String)result;
-                    if (originOctet.startsWith("<")) {
-                        result = fetchList.getObject(index + 1);
+                    // Check if there's an origin octet
+                    if (result instanceof String) {
+                        String originOctet = (String) result;
+                        if (originOctet.startsWith("<") && (index + 1) < size) {
+                            result = fetchList.getObject(index + 1);
+                        }
                     }
                 }
             }
@@ -2338,12 +2341,6 @@ public class ImapStore extends Store {
                 mOut = new BufferedOutputStream(mOut, 1024);
 
                 try {
-                    // Yahoo! requires a custom IMAP command to work right over a non-3G network
-                    if (mSettings.getHost().endsWith("yahoo.com")) {
-                        if (K9.DEBUG)
-                            Log.v(K9.LOG_TAG, "Found Yahoo! account.  Sending proprietary commands.");
-                        executeSimpleCommand("ID (\"GUID\" \"1\")");
-                    }
                     if (mSettings.getAuthType() == AuthType.CRAM_MD5) {
                         authCramMD5();
                         // The authCramMD5 method called on the previous line does not allow for handling updated capabilities

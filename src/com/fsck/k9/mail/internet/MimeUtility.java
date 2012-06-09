@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
@@ -3361,6 +3362,7 @@ public class MimeUtility {
             String bodyText = getTextFromPart(part);
             if (bodyText != null) {
                 text = fixDraftTextBody(bodyText);
+                html = HtmlConverter.textToHtml(text, false);
             }
         } else if (part.isMimeType("multipart/alternative") &&
                 firstBody instanceof MimeMultipart) {

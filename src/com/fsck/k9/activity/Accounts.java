@@ -1179,7 +1179,7 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
 
     private void onAbout() {
         String appName = getString(R.string.app_name);
-        String year = "2011";
+        String year = "2012";
         WebView wv = new WebView(this);
         StringBuilder html = new StringBuilder()
         .append("<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />")
@@ -1561,7 +1561,6 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
             builder.setInverseBackgroundForced(true);
             builder.setPositiveButton(R.string.okay_action,
                 new DialogInterface.OnClickListener() {
-
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         ListView listView = ((AlertDialog) dialog).getListView();
@@ -1575,17 +1574,17 @@ public class Accounts extends K9ListActivity implements OnItemClickListener, OnC
                                 accountUuids.add(mImportContents.accounts.get(i-start).uuid);
                             }
                         }
-
+    
                         /*
                          * TODO: Think some more about this. Overwriting could change the store
                          * type. This requires some additional code in order to work smoothly
                          * while the app is running.
                          */
                         boolean overwrite = false;
-
+    
                         dialog.dismiss();
                         activity.setNonConfigurationInstance(null);
-
+    
                         ImportAsyncTask importAsyncTask = new ImportAsyncTask(activity,
                                 includeGlobals, accountUuids, overwrite, mUri);
                         activity.setNonConfigurationInstance(importAsyncTask);

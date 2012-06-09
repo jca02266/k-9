@@ -4,6 +4,7 @@ package com.fsck.k9;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -27,6 +28,7 @@ import android.text.TextUtils;
 import android.text.format.Time;
 import android.util.Log;
 
+import com.fsck.k9.Account.SortType;
 import com.fsck.k9.activity.MessageCompose;
 import com.fsck.k9.controller.MessagingController;
 import com.fsck.k9.controller.MessagingListener;
@@ -185,9 +187,20 @@ public class K9 extends Application {
     private static String mQuietTimeEnds = null;
     private static boolean compactLayouts = false;
     private static String mAttachmentDefaultPath = "";
+
+    private static boolean mBatchButtonsMarkRead = true;
+    private static boolean mBatchButtonsDelete = true;
+    private static boolean mBatchButtonsArchive = false;
+    private static boolean mBatchButtonsMove = false;
+    private static boolean mBatchButtonsFlag = true;
+    private static boolean mBatchButtonsUnselect = true;
+
     private static boolean useGalleryBugWorkaround = false;
     private static boolean galleryBuggy;
     private static String mDeviceId = null;
+
+    private static SortType mSortType;
+    private static HashMap<SortType, Boolean> mSortAscending = new HashMap<SortType, Boolean>();
 
     /**
      * The MIME type(s) of attachments we're willing to view.
@@ -424,6 +437,14 @@ public class K9 extends Application {
         editor.putBoolean("messageViewFixedWidthFont", mMessageViewFixedWidthFont);
         editor.putBoolean("messageViewReturnToList", mMessageViewReturnToList);
         editor.putBoolean("messageViewShowNext", mMessageViewShowNext);
+
+        editor.putBoolean("batchButtonsMarkRead", mBatchButtonsMarkRead);
+        editor.putBoolean("batchButtonsDelete", mBatchButtonsDelete);
+        editor.putBoolean("batchButtonsArchive", mBatchButtonsArchive);
+        editor.putBoolean("batchButtonsMove", mBatchButtonsMove);
+        editor.putBoolean("batchButtonsFlag", mBatchButtonsFlag);
+        editor.putBoolean("batchButtonsUnselect", mBatchButtonsUnselect);
+
         editor.putString("language", language);
         editor.putInt("theme", theme);
         editor.putBoolean("useGalleryBugWorkaround", useGalleryBugWorkaround);
@@ -431,6 +452,10 @@ public class K9 extends Application {
         editor.putBoolean("confirmDeleteStarred", mConfirmDeleteStarred);
         editor.putBoolean("confirmSpam", mConfirmSpam);
         editor.putBoolean("confirmMarkAllAsRead", mConfirmMarkAllAsRead);
+
+        editor.putString("sortTypeEnum", mSortType.name());
+        editor.putBoolean("sortAscending", mSortAscending.get(mSortType));
+
         editor.putBoolean("keyguardPrivacy", mKeyguardPrivacy);
         editor.putBoolean("compactLayouts", compactLayouts);
         editor.putString("attachmentdefaultpath", mAttachmentDefaultPath);
@@ -531,7 +556,6 @@ public class K9 extends Application {
                 // let observers know a fetch occurred
                 K9.this.sendBroadcast(new Intent(K9.Intents.EmailReceived.ACTION_REFRESH_OBSERVER, null));
             }
-
         });
 
         notifyObservers();
@@ -567,11 +591,30 @@ public class K9 extends Application {
         mMessageViewFixedWidthFont = sprefs.getBoolean("messageViewFixedWidthFont", false);
         mMessageViewReturnToList = sprefs.getBoolean("messageViewReturnToList", false);
         mMessageViewShowNext = sprefs.getBoolean("messageViewShowNext", false);
+
+        mBatchButtonsMarkRead = sprefs.getBoolean("batchButtonsMarkRead", true);
+        mBatchButtonsDelete = sprefs.getBoolean("batchButtonsDelete", true);
+        mBatchButtonsArchive = sprefs.getBoolean("batchButtonsArchive", true);
+        mBatchButtonsMove = sprefs.getBoolean("batchButtonsMove", true);
+        mBatchButtonsFlag = sprefs.getBoolean("batchButtonsFlag", true);
+        mBatchButtonsUnselect = sprefs.getBoolean("batchButtonsUnselect", true);
+
         useGalleryBugWorkaround = sprefs.getBoolean("useGalleryBugWorkaround", K9.isGalleryBuggy());
         mConfirmDelete = sprefs.getBoolean("confirmDelete", false);
         mConfirmDeleteStarred = sprefs.getBoolean("confirmDeleteStarred", false);
         mConfirmSpam = sprefs.getBoolean("confirmSpam", false);
         mConfirmMarkAllAsRead = sprefs.getBoolean("confirmMarkAllAsRead", true);
+
+        try {
+            String value = sprefs.getString("sortTypeEnum", Account.DEFAULT_SORT_TYPE.name());
+            mSortType = SortType.valueOf(value);
+        } catch (Exception e) {
+            mSortType = Account.DEFAULT_SORT_TYPE;
+        }
+
+        boolean sortAscending = sprefs.getBoolean("sortAscending", Account.DEFAULT_SORT_ASCENDING);
+        mSortAscending.put(mSortType, sortAscending);
+
         mKeyguardPrivacy = sprefs.getBoolean("keyguardPrivacy", false);
         compactLayouts = sprefs.getBoolean("compactLayouts", false);
         mAttachmentDefaultPath = sprefs.getString("attachmentdefaultpath",  Environment.getExternalStorageDirectory().toString());
@@ -653,7 +696,7 @@ public class K9 extends Application {
     }
 
     public static int getK9ThemeResourceId(int theme) {
-        return (theme == THEME_LIGHT) ? android.R.style.Theme_Light : android.R.style.Theme;
+        return (theme == THEME_LIGHT) ? R.style.Theme_K9_Light : R.style.Theme_K9_Dark;
     }
 
     public static int getK9ThemeResourceId() {
@@ -1003,6 +1046,48 @@ public class K9 extends Application {
         K9.compactLayouts = compactLayouts;
     }
 
+    public static boolean batchButtonsMarkRead() {
+        return mBatchButtonsMarkRead;
+    }
+    public static void setBatchButtonsMarkRead(final boolean state) {
+        mBatchButtonsMarkRead = state;
+    }
+
+    public static boolean batchButtonsDelete() {
+        return mBatchButtonsDelete;
+    }
+    public static void setBatchButtonsDelete(final boolean state) {
+        mBatchButtonsDelete = state;
+    }
+
+    public static boolean batchButtonsArchive() {
+        return mBatchButtonsArchive;
+    }
+    public static void setBatchButtonsArchive(final boolean state) {
+        mBatchButtonsArchive = state;
+    }
+
+    public static boolean batchButtonsMove() {
+        return mBatchButtonsMove;
+    }
+    public static void setBatchButtonsMove(final boolean state) {
+        mBatchButtonsMove = state;
+    }
+
+    public static boolean batchButtonsFlag() {
+        return mBatchButtonsFlag;
+    }
+    public static void setBatchButtonsFlag(final boolean state) {
+        mBatchButtonsFlag = state;
+    }
+
+    public static boolean batchButtonsUnselect() {
+        return mBatchButtonsUnselect;
+    }
+    public static void setBatchButtonsUnselect(final boolean state) {
+        mBatchButtonsUnselect = state;
+    }
+
     /**
      * Check if this system contains a buggy Gallery 3D package.
      *
@@ -1028,6 +1113,25 @@ public class K9 extends Application {
 
     public static void setAttachmentDefaultPath(String attachmentDefaultPath) {
         K9.mAttachmentDefaultPath = attachmentDefaultPath;
+    }
+
+    public static synchronized SortType getSortType() {
+        return mSortType;
+    }
+
+    public static synchronized void setSortType(SortType sortType) {
+        mSortType = sortType;
+    }
+
+    public static synchronized boolean isSortAscending(SortType sortType) {
+        if (mSortAscending.get(sortType) == null) {
+            mSortAscending.put(sortType, sortType.isDefaultAscending());
+        }
+        return mSortAscending.get(sortType);
+    }
+
+    public static synchronized void setSortAscending(SortType sortType, boolean sortAscending) {
+        mSortAscending.put(sortType, sortAscending);
     }
     
     /**
