@@ -5,9 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.text.format.DateUtils;
+import android.util.Log;
 
 import com.fsck.k9.Account;
 import com.fsck.k9.AccountStats;
+import com.fsck.k9.K9;
 import com.fsck.k9.R;
 import com.fsck.k9.controller.MessagingListener;
 import com.fsck.k9.service.MailService;
@@ -37,8 +39,16 @@ public class ActivityListener extends MessagingListener {
                 || mSendingAccountDescription != null
                 || mLoadingHeaderFolderName != null
                 || mProcessingAccountDescription != null) {
-            progress = (mFolderTotal > 0 ?
+
+            try {
+                progress = (mFolderTotal > 0 ?
                         context.getString(R.string.folder_progress, mFolderCompleted, mFolderTotal) : "");
+            }
+            catch (NullPointerException e) {
+                Log.e(K9.LOG_TAG, String.format("context=%s, mFolderCompleted=%d, mFolderTotal=%d",
+                        context, mFolderCompleted, mFolderTotal));
+                throw e;
+            }
 
             if (mLoadingFolderName != null || mLoadingHeaderFolderName != null) {
                 String displayName = mLoadingFolderName;
