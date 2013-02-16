@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -2189,15 +2190,47 @@ public class MimeUtility {
         return null;
     }
 
+    static HashMap<String,String> defaultCharsetForK9Language;
+    static {
+        defaultCharsetForK9Language= new HashMap<String,String>();
+        defaultCharsetForK9Language.put("en", "us-ascii");
+        defaultCharsetForK9Language.put("ja", "iso-2022-jp");
+    }
+
+    static HashMap<Locale,String> defaultCharsetForLocale;
+    static {
+        defaultCharsetForLocale = new HashMap<Locale,String>();
+        defaultCharsetForLocale.put(Locale.ENGLISH, "us-ascii");
+        defaultCharsetForLocale.put(Locale.JAPAN,   "iso-2022-jp");
+    }
+
+    public static String getDefaultCharset() {
+        String charset;
+
+        charset = defaultCharsetForK9Language.get(K9.getK9Language());
+        if (charset != null) {
+            return charset;
+        }
+
+        charset = defaultCharsetForLocale.get(Locale.getDefault());
+        if (charset != null) {
+            return charset;
+        }
+        return "us-ascii";
+    }
+
     public static String fixupCharset(String charset, Message message) throws MessagingException {
-        if (charset == null || "0".equals(charset))
-            charset = "US-ASCII";  // No encoding, so use us-ascii, which is the standard.
+        if (charset == null || "0".equals(charset)) {
+            charset = MimeUtility.getDefaultCharset();
+        }
 
         charset = charset.toLowerCase(Locale.US);
         if (charset.equals("cp932"))
             charset = "shift_jis";
         else if (charset.equals("koi8-u"))
             charset = "koi8-r";
+        else if (charset.equals("iso-2022-jp-2"))
+            charset = "iso-2022-jp";
 
         if (charset.equals("shift_jis") || charset.equals("iso-2022-jp")) {
             String variant = getJisVariantFromMessage(message);
@@ -2255,7 +2288,7 @@ public class MimeUtility {
         return getJisVariantFromAddress(addresses[0].getAddress());
     }
 
-    private static String getJisVariantFromAddress(String address) {
+    public static String getJisVariantFromAddress(String address) {
         if (address == null)
             return null;
         if (isInDomain(address, "docomo.ne.jp") || isInDomain(address, "dwmail.jp") ||
