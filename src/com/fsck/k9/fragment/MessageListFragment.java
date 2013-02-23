@@ -3269,6 +3269,11 @@ public class MessageListFragment extends SherlockFragment implements OnItemClick
 
     public boolean isLoadFinished() {
         boolean loadFinished = true;
+        if (mCursorValid == null) {
+            // TODO:
+            Log.e(K9.LOG_TAG, "Why the mCursorValid is null?");
+            return false;
+        }
         for (int i = 0; i < mCursorValid.length; i++) {
             loadFinished &= mCursorValid[i];
         }
