@@ -1707,7 +1707,12 @@ public class MessageListFragment extends SherlockFragment implements OnItemClick
         }
 
         private boolean updateForMe(Account account, String folder) {
-            //FIXME
+            if (account == null || folder == null) {
+                return false;
+            }
+
+            // FIXME: There could be more than one account and one folder
+
             return ((account.equals(mAccount) && folder.equals(mFolderName)));
         }
     }
@@ -1875,14 +1880,22 @@ public class MessageListFragment extends SherlockFragment implements OnItemClick
                 }
             }
 
-            // Background indicator
-            if (K9.useBackgroundAsUnreadIndicator()) {
-                int res = (read) ? R.attr.messageListReadItemBackgroundColor :
-                        R.attr.messageListUnreadItemBackgroundColor;
+            // Background color
+            if (selected || K9.useBackgroundAsUnreadIndicator()) {
+                int res;
+                if (selected) {
+                    res = R.attr.messageListSelectedBackgroundColor;
+                } else if (read) {
+                    res = R.attr.messageListReadItemBackgroundColor;
+                } else {
+                    res = R.attr.messageListUnreadItemBackgroundColor;
+                }
 
                 TypedValue outValue = new TypedValue();
                 getActivity().getTheme().resolveAttribute(res, outValue, true);
                 view.setBackgroundColor(outValue.data);
+            } else {
+                view.setBackgroundColor(Color.TRANSPARENT);
             }
 
             if (mActiveMessage != null) {
@@ -2298,7 +2311,9 @@ public class MessageListFragment extends SherlockFragment implements OnItemClick
             folder = null;
         }
 
-        displayFolderChoice(ACTIVITY_CHOOSE_FOLDER_MOVE, mAccount, folder, messages);
+        Account account = messages.get(0).getFolder().getAccount();
+
+        displayFolderChoice(ACTIVITY_CHOOSE_FOLDER_MOVE, account, folder, messages);
     }
 
     private void onCopy(Message message) {
@@ -3298,6 +3313,10 @@ public class MessageListFragment extends SherlockFragment implements OnItemClick
     }
 
     public boolean isLoadFinished() {
+        if (mCursorValid == null) {
+            return false;
+        }
+
         boolean loadFinished = true;
         if (mCursorValid == null) {
             // TODO:
@@ -3374,7 +3393,7 @@ public class MessageListFragment extends SherlockFragment implements OnItemClick
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        mSelected = null;
+        mSelected.clear();
         mAdapter.swapCursor(null);
     }
 

@@ -6,8 +6,8 @@
 
     <ScrollView
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_marginBottom="54dip"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:fadingEdge="none" >
 
         <LinearLayout
@@ -30,6 +30,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <include layout="@layout/wizard_next" />
+    <include layout="@layout/wizard_welcome" />
 
 </LinearLayout>

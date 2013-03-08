@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_marginTop="-45dip" 
-        android:padding="0dip"
-        android:layout_alignParentBottom="true"
-        android:gravity="bottom|left" 
+<merge xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
         android:background="@android:drawable/bottom_bar"
-        android:layout_height="fill_parent"
-        android:layout_width="fill_parent">
+        android:gravity="bottom|left" >
+
         <Button
             android:id="@+id/cancel"
-            android:text="@string/cancel_action"
-            android:minWidth="@dimen/button_minWidth"
-            android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:layout_marginBottom="-4dip" 
-            android:layout_alignParentLeft="true"
-            android:layout_centerVertical="false" 
-            />
-    </RelativeLayout>
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/button_minWidth"
+            android:text="@string/cancel_action" />
+    </LinearLayout>
+
+</merge>

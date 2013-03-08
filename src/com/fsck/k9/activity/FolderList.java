@@ -34,7 +34,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.app.ActionBar.OnNavigationListener;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.widget.SearchView;
@@ -46,7 +45,6 @@ import com.fsck.k9.FontSizes;
 import com.fsck.k9.K9;
 import com.fsck.k9.Preferences;
 import com.fsck.k9.R;
-import com.fsck.k9.activity.misc.ActionBarNavigationSpinner;
 import com.fsck.k9.activity.setup.AccountSettings;
 import com.fsck.k9.activity.setup.FolderSettings;
 import com.fsck.k9.activity.setup.Prefs;
@@ -71,7 +69,7 @@ import de.cketti.library.changelog.ChangeLog;
  * Activity shows list of the Account's folders
  */
 
-public class FolderList extends K9ListActivity implements OnNavigationListener {
+public class FolderList extends K9ListActivity {
     private static final String EXTRA_ACCOUNT = "account";
 
     private static final String EXTRA_INITIAL_FOLDER = "initialFolder";
@@ -321,19 +319,6 @@ public class FolderList extends K9ListActivity implements OnNavigationListener {
         mActionBarUnread = (TextView) customView.findViewById(R.id.actionbar_unread_count);
 
         mActionBar.setDisplayHomeAsUpEnabled(true);
-    }
-
-    @Override
-    public boolean onNavigationItemSelected(int itemPosition, long itemId) {
-        if (itemId == ActionBarNavigationSpinner.AB_NAVIGATION_INBOX) {
-            onOpenFolder(mAccount.getInboxFolderName());
-            return true;
-        } else if (itemId == ActionBarNavigationSpinner.AB_NAVIGATION_ACCOUNTS) {
-            onAccounts();
-            return true;
-        }
-
-        return false;
     }
 
     @Override
@@ -657,7 +642,7 @@ public class FolderList extends K9ListActivity implements OnNavigationListener {
         });
 
         folderSearchView.setOnCloseListener(new SearchView.OnCloseListener() {
-            
+
             @Override
             public boolean onClose() {
                 mActionBarTitle.setText(getString(R.string.folders_title));
@@ -1045,12 +1030,12 @@ public class FolderList extends K9ListActivity implements OnNavigationListener {
                 return view;
             }
 
-            holder.folderName.setText(folder.displayName);
+            final String folderStatus;
 
             if (folder.loading) {
-                holder.folderStatus.setText(R.string.status_loading);
+                folderStatus = getString(R.string.status_loading);
             } else if (folder.status != null) {
-                holder.folderStatus.setText(folder.status);
+                folderStatus = folder.status;
             } else if (folder.lastChecked != 0) {
                 long now = System.currentTimeMillis();
                 int flags = DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_YEAR;
@@ -1064,12 +1049,20 @@ public class FolderList extends K9ListActivity implements OnNavigationListener {
                             now, DateUtils.MINUTE_IN_MILLIS, flags);
                 }
 
-                holder.folderStatus.setText(getString(folder.pushActive
+                folderStatus = getString(folder.pushActive
                         ? R.string.last_refresh_time_format_with_push
                         : R.string.last_refresh_time_format,
-                        formattedDate));
+                        formattedDate);
             } else {
-                holder.folderStatus.setText(null);
+                folderStatus = null;
+            }
+
+            holder.folderName.setText(folder.displayName);
+            if (folderStatus != null) {
+                holder.folderStatus.setText(folderStatus);
+                holder.folderStatus.setVisibility(View.VISIBLE);
+            } else {
+                holder.folderStatus.setVisibility(View.GONE);
             }
 
             if (folder.unreadMessageCount != 0) {

@@ -55,6 +55,7 @@ import com.fsck.k9.activity.setup.AccountSetupIncoming;
 import com.fsck.k9.activity.setup.AccountSetupOutgoing;
 import com.fsck.k9.cache.EmailProviderCache;
 import com.fsck.k9.helper.Contacts;
+import com.fsck.k9.helper.NotificationBuilder;
 import com.fsck.k9.helper.power.TracingPowerManager;
 import com.fsck.k9.helper.power.TracingPowerManager.TracingWakeLock;
 import com.fsck.k9.mail.Address;
@@ -2638,10 +2639,10 @@ public class MessagingController implements Runnable {
         final PendingIntent pi = PendingIntent.getActivity(context,
                 account.getAccountNumber(), i, PendingIntent.FLAG_UPDATE_CURRENT);
         final String title = context.getString(
-                R.string.notification_certificate_error_text, account.getName());
+                R.string.notification_certificate_error_title, account.getName());
 
-        final NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
-        builder.setSmallIcon(R.drawable.stat_notify_email_generic);
+        final NotificationCompat.Builder builder = new NotificationBuilder(context);
+        builder.setSmallIcon(R.drawable.ic_notify_new_mail);
         builder.setWhen(System.currentTimeMillis());
         builder.setAutoCancel(true);
         builder.setTicker(title);
@@ -3332,7 +3333,7 @@ public class MessagingController implements Runnable {
         NotificationManager notifMgr =
             (NotificationManager) mApplication.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(mApplication);
+        NotificationCompat.Builder builder = new NotificationBuilder(mApplication);
         builder.setSmallIcon(R.drawable.ic_notify_check_mail);
         builder.setWhen(System.currentTimeMillis());
         builder.setOngoing(true);
@@ -3382,8 +3383,8 @@ public class MessagingController implements Runnable {
         NotificationManager notifMgr =
                 (NotificationManager) mApplication.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(mApplication);
-        builder.setSmallIcon(R.drawable.stat_notify_email_generic);
+        NotificationCompat.Builder builder = new NotificationBuilder(mApplication);
+        builder.setSmallIcon(R.drawable.ic_notify_new_mail);
         builder.setWhen(System.currentTimeMillis());
         builder.setAutoCancel(true);
         builder.setTicker(mApplication.getString(R.string.send_failure_subject));
@@ -3417,7 +3418,7 @@ public class MessagingController implements Runnable {
         final NotificationManager notifMgr =
                 (NotificationManager) mApplication.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(mApplication);
+        NotificationCompat.Builder builder = new NotificationBuilder(mApplication);
         builder.setSmallIcon(R.drawable.ic_notify_check_mail);
         builder.setWhen(System.currentTimeMillis());
         builder.setOngoing(true);
@@ -4802,8 +4803,8 @@ public class MessagingController implements Runnable {
         NotificationManager notifMgr =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
-        builder.setSmallIcon(R.drawable.stat_notify_email_generic);
+        NotificationCompat.Builder builder = new NotificationBuilder(context);
+        builder.setSmallIcon(R.drawable.ic_notify_new_mail);
         builder.setWhen(System.currentTimeMillis());
         if (!updateSilently) {
             builder.setTicker(summary);
