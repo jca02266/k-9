@@ -2229,8 +2229,6 @@ public class MimeUtility {
             charset = "shift_jis";
         else if (charset.equals("koi8-u"))
             charset = "koi8-r";
-        else if (charset.equals("iso-2022-jp-2"))
-            charset = "iso-2022-jp";
 
         if (charset.equals("shift_jis") || charset.equals("iso-2022-jp")) {
             String variant = getJisVariantFromMessage(message);
