@@ -128,6 +128,7 @@ public class AccountSettings extends K9PreferenceActivity {
     private boolean mIsMoveCapable = false;
     private boolean mIsPushCapable = false;
     private boolean mIsExpungeCapable = false;
+    private boolean mIsSeenFlagSupported = false;
 
     private PreferenceScreen mMainScreen;
     private PreferenceScreen mComposingScreen;
@@ -180,7 +181,11 @@ public class AccountSettings extends K9PreferenceActivity {
     private PreferenceScreen mSearchScreen;
     private CheckBoxPreference mCloudSearchEnabled;
     private ListPreference mRemoteSearchNumResults;
-    private CheckBoxPreference mRemoteSearchFullText;
+    /*
+     * Temporarily removed because search results aren't displayed to the user.
+     * So this feature is useless.
+     */
+    //private CheckBoxPreference mRemoteSearchFullText;
     private ListPreference mMessageCharset;
 
     private ListPreference mLocalStorageProvider;
@@ -210,6 +215,7 @@ public class AccountSettings extends K9PreferenceActivity {
             mIsMoveCapable = store.isMoveCapable();
             mIsPushCapable = store.isPushCapable();
             mIsExpungeCapable = store.isExpungeCapable();
+            mIsSeenFlagSupported = store.isSeenFlagSupported();
         } catch (Exception e) {
             Log.e(K9.LOG_TAG, "Could not get remote store", e);
         }
@@ -354,7 +360,10 @@ public class AccountSettings extends K9PreferenceActivity {
         });
 
         mDeletePolicy = (ListPreference) findPreference(PREFERENCE_DELETE_POLICY);
-        mDeletePolicy.setValue("" + mAccount.getDeletePolicy());
+        if (!mIsSeenFlagSupported) {
+            removeListEntry(mDeletePolicy, Integer.toString(Account.DELETE_POLICY_MARK_AS_READ));
+        }
+        mDeletePolicy.setValue(Integer.toString(mAccount.getDeletePolicy()));
         mDeletePolicy.setSummary(mDeletePolicy.getEntry());
         mDeletePolicy.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             public boolean onPreferenceChange(Preference preference, Object newValue) {
@@ -506,7 +515,7 @@ public class AccountSettings extends K9PreferenceActivity {
             }
         );
         updateRemoteSearchLimit(mRemoteSearchNumResults.getValue());
-        mRemoteSearchFullText = (CheckBoxPreference) findPreference(PREFERENCE_REMOTE_SEARCH_FULL_TEXT);
+        //mRemoteSearchFullText = (CheckBoxPreference) findPreference(PREFERENCE_REMOTE_SEARCH_FULL_TEXT);
 
         mPushPollOnConnect = (CheckBoxPreference) findPreference(PREFERENCE_PUSH_POLL_ON_CONNECT);
         mIdleRefreshPeriod = (ListPreference) findPreference(PREFERENCE_IDLE_REFRESH_PERIOD);
@@ -516,7 +525,7 @@ public class AccountSettings extends K9PreferenceActivity {
 
             mCloudSearchEnabled.setChecked(mAccount.allowRemoteSearch());
             mRemoteSearchNumResults.setValue(Integer.toString(mAccount.getRemoteSearchNumResults()));
-            mRemoteSearchFullText.setChecked(mAccount.isRemoteSearchFullText());
+            //mRemoteSearchFullText.setChecked(mAccount.isRemoteSearchFullText());
 
             mIdleRefreshPeriod.setValue(String.valueOf(mAccount.getIdleRefreshMinutes()));
             mIdleRefreshPeriod.setSummary(mIdleRefreshPeriod.getEntry());
@@ -729,6 +738,26 @@ public class AccountSettings extends K9PreferenceActivity {
         });
     }
 
+    private void removeListEntry(ListPreference listPreference, String remove) {
+        CharSequence[] entryValues = listPreference.getEntryValues();
+        CharSequence[] entries = listPreference.getEntries();
+
+        CharSequence[] newEntryValues = new String[entryValues.length - 1];
+        CharSequence[] newEntries = new String[entryValues.length - 1];
+
+        for (int i = 0, out = 0; i < entryValues.length; i++) {
+            CharSequence value = entryValues[i];
+            if (!value.equals(remove)) {
+                newEntryValues[out] = value;
+                newEntries[out] = entries[i];
+                out++;
+            }
+        }
+
+        listPreference.setEntryValues(newEntryValues);
+        listPreference.setEntries(newEntries);
+    }
+
     private void handleCryptoAppDependencies() {
         if ("".equals(mCryptoApp.getValue())) {
             mCryptoAutoSignature.setEnabled(false);
@@ -807,7 +836,7 @@ public class AccountSettings extends K9PreferenceActivity {
             mAccount.setMaxPushFolders(Integer.parseInt(mMaxPushFolders.getValue()));
             mAccount.setAllowRemoteSearch(mCloudSearchEnabled.isChecked());
             mAccount.setRemoteSearchNumResults(Integer.parseInt(mRemoteSearchNumResults.getValue()));
-            mAccount.setRemoteSearchFullText(mRemoteSearchFullText.isChecked());
+            //mAccount.setRemoteSearchFullText(mRemoteSearchFullText.isChecked());
         }
 
         boolean needsRefresh = mAccount.setAutomaticCheckIntervalMinutes(Integer.parseInt(mCheckFrequency.getValue()));
