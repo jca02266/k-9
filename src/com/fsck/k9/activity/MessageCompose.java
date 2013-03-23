@@ -1127,7 +1127,7 @@ public class MessageCompose extends K9Activity implements OnClickListener {
         mQuotedHtmlContent =
                 (InsertableHtmlContent) savedInstanceState.getSerializable(STATE_KEY_HTML_QUOTE);
         if (mQuotedHtmlContent != null && mQuotedHtmlContent.getQuotedContent() != null) {
-            mQuotedHTML.setText(mQuotedHtmlContent.getQuotedContent(), "text/html");
+            mQuotedHTML.setText(mQuotedHtmlContent.getQuotedContent());
         }
 
         mDraftId = savedInstanceState.getLong(STATE_KEY_DRAFT_ID);
@@ -2816,7 +2816,7 @@ public class MessageCompose extends K9Activity implements OnClickListener {
                     } else {
                         mQuotedHtmlContent.setFooterInsertionPoint(bodyOffset);
                     }
-                    mQuotedHTML.setText(mQuotedHtmlContent.getQuotedContent(), "text/html");
+                    mQuotedHTML.setText(mQuotedHtmlContent.getQuotedContent());
                 }
             }
             if (bodyPlainOffset != null && bodyPlainLength != null) {
@@ -3000,7 +3000,7 @@ public class MessageCompose extends K9Activity implements OnClickListener {
             mQuotedHtmlContent = quoteOriginalHtmlMessage(mSourceMessage, content, mQuoteStyle);
 
             // Load the message with the reply header.
-            mQuotedHTML.setText(mQuotedHtmlContent.getQuotedContent(), "text/html");
+            mQuotedHTML.setText(mQuotedHtmlContent.getQuotedContent());
 
             // TODO: Also strip the signature from the text/plain part
             mQuotedText.setText(quoteOriginalTextMessage(mSourceMessage,
@@ -3048,7 +3048,7 @@ public class MessageCompose extends K9Activity implements OnClickListener {
             if (part != null) {
                 if (K9.DEBUG)
                     Log.d(K9.LOG_TAG, "getBodyTextFromMessage: HTML requested, text found.");
-                return HtmlConverter.textToHtml(MimeUtility.getTextFromPart(part), true);
+                return HtmlConverter.textToHtml(MimeUtility.getTextFromPart(part));
             }
         } else if (format == SimpleMessageFormat.TEXT) {
             // Text takes precedence, then html.

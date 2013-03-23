@@ -2803,10 +2803,10 @@ public class MessagingController implements Runnable {
         try {
             if (threadedList) {
                 localStore.setFlagForThreads(ids, flag, newState);
-                removeFlagFromCache(account, ids, flag);
+                removeFlagForThreadsFromCache(account, ids, flag);
             } else {
                 localStore.setFlag(ids, flag, newState);
-                removeFlagForThreadsFromCache(account, ids, flag);
+                removeFlagFromCache(account, ids, flag);
             }
         } catch (MessagingException e) {
             Log.e(K9.LOG_TAG, "Couldn't set flags in local database", e);
@@ -3158,9 +3158,11 @@ public class MessagingController implements Runnable {
             throws MessagingException {
 
         if (account.isMarkMessageAsReadOnView() && !message.isSet(Flag.SEEN)) {
-            message.setFlag(Flag.SEEN, true);
-            setFlagSynchronous(account, Collections.singletonList(Long.valueOf(message.getId())),
-                    Flag.SEEN, true, false);
+            List<Long> messageIds = Collections.singletonList(message.getId());
+            setFlagInCache(account, messageIds, Flag.SEEN, true);
+            setFlagSynchronous(account, messageIds, Flag.SEEN, true, false);
+
+            ((LocalMessage) message).setFlagInternal(Flag.SEEN, true);
         }
     }
 
