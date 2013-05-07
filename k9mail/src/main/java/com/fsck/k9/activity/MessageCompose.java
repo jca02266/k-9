@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.IntentSender.SendIntentException;
 import android.content.pm.ActivityInfo;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -299,6 +300,12 @@ public class MessageCompose extends K9Activity implements OnClickListener,
 
         messageContentView = (EolConvertingEditText) findViewById(R.id.message_content);
         messageContentView.getInputExtras(true).putBoolean("allowEmoji", true);
+        if (K9.messageViewFixedWidthFont()) {
+            messageContentView.setTypeface(Typeface.MONOSPACE);
+        }
+        else {
+            messageContentView.setTypeface(Typeface.DEFAULT);
+        }
 
         attachmentsView = (LinearLayout) findViewById(R.id.attachments);
 
