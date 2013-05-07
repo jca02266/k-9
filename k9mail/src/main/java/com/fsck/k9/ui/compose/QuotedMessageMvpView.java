@@ -1,6 +1,7 @@
 package com.fsck.k9.ui.compose;
 
 
+import android.graphics.Typeface;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -10,6 +11,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 
 import com.fsck.k9.FontSizes;
+import com.fsck.k9.K9;
 import com.fsck.k9.R;
 import com.fsck.k9.activity.MessageCompose;
 import com.fsck.k9.message.QuotedTextMode;
@@ -48,6 +50,13 @@ public class QuotedMessageMvpView {
         });
 
         mMessageContentView = (EolConvertingEditText) messageCompose.findViewById(R.id.message_content);
+
+        if (K9.messageViewFixedWidthFont()) {
+            mQuotedText.setTypeface(Typeface.MONOSPACE);
+        }
+        else {
+            mQuotedText.setTypeface(Typeface.DEFAULT);
+        }
     }
 
     public void setOnClickPresenter(final QuotedMessagePresenter presenter) {
