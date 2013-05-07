@@ -13,6 +13,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
 import android.content.pm.ActivityInfo;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -621,6 +622,12 @@ public class MessageCompose extends K9Activity implements OnClickListener,
 
         mMessageContentView = (EolConvertingEditText)findViewById(R.id.message_content);
         mMessageContentView.getInputExtras(true).putBoolean("allowEmoji", true);
+        if (K9.messageViewFixedWidthFont()) {
+            mMessageContentView.setTypeface(Typeface.MONOSPACE);
+        }
+        else {
+            mMessageContentView.setTypeface(Typeface.DEFAULT);
+        }
 
         mAttachments = (LinearLayout)findViewById(R.id.attachments);
         mQuotedTextShow = (Button)findViewById(R.id.quoted_text_show);
@@ -629,7 +636,12 @@ public class MessageCompose extends K9Activity implements OnClickListener,
         mQuotedTextDelete = (ImageButton)findViewById(R.id.quoted_text_delete);
         mQuotedText = (EolConvertingEditText)findViewById(R.id.quoted_text);
         mQuotedText.getInputExtras(true).putBoolean("allowEmoji", true);
-
+        if (K9.messageViewFixedWidthFont()) {
+            mQuotedText.setTypeface(Typeface.MONOSPACE);
+        }
+        else {
+            mQuotedText.setTypeface(Typeface.DEFAULT);
+        }
         mQuotedHTML = (MessageWebView) findViewById(R.id.quoted_html);
         mQuotedHTML.configure();
         // Disable the ability to click links in the quoted HTML page. I think this is a nice feature, but if someone
