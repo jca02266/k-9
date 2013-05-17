@@ -11,6 +11,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -80,6 +81,7 @@ import com.fsck.k9.mail.internet.MimeUtility;
 import com.fsck.k9.mail.internet.TextBody;
 import com.fsck.k9.mail.store.LocalStore;
 import com.fsck.k9.mail.store.LocalStore.LocalAttachmentBody;
+import com.fsck.k9.view.AddressMultiAutoCompleteTextView;
 import com.fsck.k9.view.MessageWebView;
 import org.apache.james.mime4j.codec.EncoderUtil;
 import org.htmlcleaner.CleanerProperties;
@@ -256,9 +258,9 @@ public class MessageCompose extends K9Activity implements OnClickListener {
     private Button mChooseIdentityButton;
     private LinearLayout mCcWrapper;
     private LinearLayout mBccWrapper;
-    private MultiAutoCompleteTextView mToView;
-    private MultiAutoCompleteTextView mCcView;
-    private MultiAutoCompleteTextView mBccView;
+    private AddressMultiAutoCompleteTextView mToView;
+    private AddressMultiAutoCompleteTextView mCcView;
+    private AddressMultiAutoCompleteTextView mBccView;
     private EditText mSubjectView;
     private EditText mSignatureView;
     private EditText mMessageContentView;
@@ -547,9 +549,9 @@ public class MessageCompose extends K9Activity implements OnClickListener {
             mChooseIdentityButton.setVisibility(View.GONE);
         }
 
-        mToView = (MultiAutoCompleteTextView) findViewById(R.id.to);
-        mCcView = (MultiAutoCompleteTextView) findViewById(R.id.cc);
-        mBccView = (MultiAutoCompleteTextView) findViewById(R.id.bcc);
+        mToView = (AddressMultiAutoCompleteTextView) findViewById(R.id.to);
+        mCcView = (AddressMultiAutoCompleteTextView) findViewById(R.id.cc);
+        mBccView = (AddressMultiAutoCompleteTextView) findViewById(R.id.bcc);
         mSubjectView = (EditText) findViewById(R.id.subject);
         mSubjectView.getInputExtras(true).putBoolean("allowEmoji", true);
 
@@ -568,6 +570,12 @@ public class MessageCompose extends K9Activity implements OnClickListener {
 
         mMessageContentView = (EditText)findViewById(R.id.message_content);
         mMessageContentView.getInputExtras(true).putBoolean("allowEmoji", true);
+        if (K9.messageViewFixedWidthFont()) {
+            mMessageContentView.setTypeface(Typeface.MONOSPACE);
+        }
+        else {
+            mMessageContentView.setTypeface(Typeface.DEFAULT);
+        }
 
         mAttachments = (LinearLayout)findViewById(R.id.attachments);
         mQuotedTextShow = (Button)findViewById(R.id.quoted_text_show);
@@ -576,7 +584,12 @@ public class MessageCompose extends K9Activity implements OnClickListener {
         mQuotedTextDelete = (ImageButton)findViewById(R.id.quoted_text_delete);
         mQuotedText = (EditText)findViewById(R.id.quoted_text);
         mQuotedText.getInputExtras(true).putBoolean("allowEmoji", true);
-
+        if (K9.messageViewFixedWidthFont()) {
+            mQuotedText.setTypeface(Typeface.MONOSPACE);
+        }
+        else {
+            mQuotedText.setTypeface(Typeface.DEFAULT);
+        }
         mQuotedHTML = (MessageWebView) findViewById(R.id.quoted_html);
         mQuotedHTML.configure();
         // Disable the ability to click links in the quoted HTML page. I think this is a nice feature, but if someone
