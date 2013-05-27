@@ -54,6 +54,7 @@ import com.fsck.k9.K9;
 import com.fsck.k9.Preferences;
 import com.fsck.k9.R;
 import com.fsck.k9.activity.misc.ExtendedAsyncTask;
+import com.fsck.k9.activity.misc.NonConfigurationInstance;
 import com.fsck.k9.activity.setup.AccountSettings;
 import com.fsck.k9.activity.setup.FolderSettings;
 import com.fsck.k9.activity.setup.Prefs;
@@ -108,6 +109,13 @@ public class FolderList extends K9ListActivity {
     private TextView mActionBarTitle;
     private TextView mActionBarSubTitle;
     private TextView mActionBarUnread;
+
+    /**
+     * Contains information about objects that need to be retained on configuration changes.
+     *
+     * @see #onRetainNonConfigurationInstance()
+     */
+    private NonConfigurationInstance mNonConfigurationInstance;
 
     class FolderListHandler extends Handler {
 
@@ -291,6 +299,14 @@ public class FolderList extends K9ListActivity {
 
         context = this;
 
+        /* TODO:
+        // Handle activity restarts because of a configuration change (e.g. rotating the screen)
+        mNonConfigurationInstance = (NonConfigurationInstance)getLastNonConfigurationInstance();
+        if (mNonConfigurationInstance != null) {
+            mNonConfigurationInstance.restore(this);
+        }
+        */
+
         ChangeLog cl = new ChangeLog(this);
         if (cl.isFirstRun()) {
             cl.getLogDialog().show();
@@ -351,8 +367,18 @@ public class FolderList extends K9ListActivity {
     }
 
 
+    /**
+     * Save the reference to a currently displayed dialog or a running AsyncTask (if available).
+     */
     @Override public Object onRetainNonConfigurationInstance() {
         return (mAdapter == null) ? null : mAdapter.mFolders;
+/* TODO:
+        Object retain = null;
+        if (mNonConfigurationInstance != null && mNonConfigurationInstance.retain()) {
+            retain = mNonConfigurationInstance;
+        }
+        return retain;
+*/
     }
 
     @Override public void onPause() {
@@ -580,7 +606,7 @@ public class FolderList extends K9ListActivity {
             FolderList activity = (FolderList)mActivity;
 
             // Let the activity know that the background task is complete
-            //            activity.setNonConfigurationInstance(null);
+//            activity.setNonConfigurationInstance(null);
 
             mLocalFolder.close();
             removeProgressDialog();
@@ -602,6 +628,18 @@ public class FolderList extends K9ListActivity {
             });
             builder.show();
         }
+    }
+
+    /**
+     * Set the {@code NonConfigurationInstance} this activity should retain on configuration
+     * changes.
+     *
+     * @param inst
+     *         The {@link NonConfigurationInstance} that should be retained when
+     *         {@link FolderList#onRetainNonConfigurationInstance()} is called.
+     */
+    private void setNonConfigurationInstance(NonConfigurationInstance inst) {
+        mNonConfigurationInstance = inst;
     }
 
     private void sendMail(Account account) {
