@@ -137,6 +137,14 @@
                 android:entryValues="@array/settings_preview_lines_values"
                 android:dialogTitle="@string/global_settings_preview_lines_label"
                 />
+
+
+            <CheckBoxPreference
+                android:persistent="false"
+                android:key="messagelist_stars"
+                android:title="@string/global_settings_flag_label"
+                android:summary="@string/global_settings_flag_summary" />
+
             <CheckBoxPreference
                 android:persistent="false"
                 android:key="messagelist_checkboxes"
@@ -176,6 +184,12 @@
                 android:key="messagelist_show_contact_picture"
                 android:title="@string/global_settings_show_contact_picture_label"
                 android:summary="@string/global_settings_show_contact_picture_summary"
+                />
+
+            <CheckBoxPreference
+                android:persistent="false"
+                android:key="messagelist_colorize_missing_contact_pictures"
+                android:title="@string/global_settings_colorize_missing_contact_pictures"
                 />
 
             <CheckBoxPreference

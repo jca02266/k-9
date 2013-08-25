@@ -142,7 +142,7 @@ public class LocalStore extends Store implements Serializable {
      */
     private static final int THREAD_FLAG_UPDATE_BATCH_SIZE = 500;
 
-    public static final int DB_VERSION = 48;
+    public static final int DB_VERSION = 49;
 
 
     public static String getColumnNameForFlag(Flag flag) {
@@ -284,6 +284,11 @@ public class LocalStore extends Store implements Serializable {
 
                     db.execSQL("DROP INDEX IF EXISTS msg_flagged");
                     db.execSQL("CREATE INDEX IF NOT EXISTS msg_flagged ON messages (flagged)");
+
+                    db.execSQL("DROP INDEX IF EXISTS msg_composite");
+                    db.execSQL("CREATE INDEX IF NOT EXISTS msg_composite ON messages (deleted, empty,folder_id,flagged,read)");
+
+
 
                     db.execSQL("DROP TABLE IF EXISTS threads");
                     db.execSQL("CREATE TABLE threads (" +
@@ -689,6 +694,10 @@ public class LocalStore extends Store implements Serializable {
                                 "BEGIN " +
                                 "UPDATE threads SET root=id WHERE root IS NULL AND ROWID = NEW.ROWID; " +
                                 "END");
+                    }
+                    if (db.getVersion() < 49) {
+                        db.execSQL("CREATE INDEX IF NOT EXISTS msg_composite ON messages (deleted, empty,folder_id,flagged,read)");
+
                     }
                 }
 
@@ -1354,9 +1363,9 @@ public class LocalStore extends Store implements Serializable {
         }
 
         @Override
-        public void open(final OpenMode mode) throws MessagingException {
+        public void open(final int mode) throws MessagingException {
 
-            if (isOpen() && (getMode() == mode || mode == OpenMode.READ_ONLY)) {
+            if (isOpen() && (getMode() == mode || mode == OPEN_MODE_RO)) {
                 return;
             } else if (isOpen()) {
                 //previously opened in READ_ONLY and now requesting READ_WRITE
@@ -1428,8 +1437,8 @@ public class LocalStore extends Store implements Serializable {
         }
 
         @Override
-        public OpenMode getMode() {
-            return OpenMode.READ_WRITE;
+        public int getMode() {
+            return OPEN_MODE_RW;
         }
 
         @Override
@@ -1498,13 +1507,13 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public Integer doDbWork(final SQLiteDatabase db) throws WrappedException {
                         try {
-                            open(OpenMode.READ_WRITE);
+                            open(OPEN_MODE_RW);
                         } catch (MessagingException e) {
                             throw new WrappedException(e);
                         }
                         Cursor cursor = null;
                         try {
-                            cursor = db.rawQuery("SELECT COUNT(*) FROM messages WHERE (empty IS NULL OR empty != 1) AND deleted = 0 and folder_id = ?",
+                            cursor = db.rawQuery("SELECT COUNT(id) FROM messages WHERE (empty IS NULL OR empty != 1) AND deleted = 0 and folder_id = ?",
                                                  new String[] {
                                                      Long.toString(mFolderId)
                                                  });
@@ -1522,13 +1531,17 @@ public class LocalStore extends Store implements Serializable {
 
         @Override
         public int getUnreadMessageCount() throws MessagingException {
+            if (mFolderId == -1) {
+                open(OPEN_MODE_RW);
+            }
+
             try {
                 return database.execute(false, new DbCallback<Integer>() {
                     @Override
                     public Integer doDbWork(final SQLiteDatabase db) throws WrappedException {
                         int unreadMessageCount = 0;
-                        Cursor cursor = db.query("messages", new String[] { "SUM(read=0)" },
-                                "folder_id = ? AND (empty IS NULL OR empty != 1) AND deleted = 0",
+                        Cursor cursor = db.query("messages", new String[] { "COUNT(id)" },
+                                "folder_id = ? AND (empty IS NULL OR empty != 1) AND deleted = 0 AND read=0",
                                 new String[] { Long.toString(mFolderId) }, null, null, null);
 
                         try {
@@ -1549,8 +1562,8 @@ public class LocalStore extends Store implements Serializable {
 
         @Override
         public int getFlaggedMessageCount() throws MessagingException {
-            if (!isOpen()) {
-                open(OpenMode.READ_WRITE);
+            if (mFolderId == -1) {
+                open(OPEN_MODE_RW);
             }
 
             try {
@@ -1558,8 +1571,8 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public Integer doDbWork(final SQLiteDatabase db) throws WrappedException {
                         int flaggedMessageCount = 0;
-                        Cursor cursor = db.query("messages", new String[] { "SUM(flagged)" },
-                                "folder_id = ? AND (empty IS NULL OR empty != 1) AND deleted = 0",
+                        Cursor cursor = db.query("messages", new String[] { "COUNT(id)" },
+                                "folder_id = ? AND (empty IS NULL OR empty != 1) AND deleted = 0 AND flagged = 1",
                                 new String[] { Long.toString(mFolderId) }, null, null, null);
 
                         try {
@@ -1581,7 +1594,7 @@ public class LocalStore extends Store implements Serializable {
         @Override
         public void setLastChecked(final long lastChecked) throws MessagingException {
             try {
-                open(OpenMode.READ_WRITE);
+                open(OPEN_MODE_RW);
                 LocalFolder.super.setLastChecked(lastChecked);
             } catch (MessagingException e) {
                 throw new WrappedException(e);
@@ -1592,7 +1605,7 @@ public class LocalStore extends Store implements Serializable {
         @Override
         public void setLastPush(final long lastChecked) throws MessagingException {
             try {
-                open(OpenMode.READ_WRITE);
+                open(OPEN_MODE_RW);
                 LocalFolder.super.setLastPush(lastChecked);
             } catch (MessagingException e) {
                 throw new WrappedException(e);
@@ -1601,7 +1614,7 @@ public class LocalStore extends Store implements Serializable {
         }
 
         public int getVisibleLimit() throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             return mVisibleLimit;
         }
 
@@ -1611,7 +1624,7 @@ public class LocalStore extends Store implements Serializable {
                 if (mVisibleLimit == 0) {
                     return ;
                 }
-                open(OpenMode.READ_WRITE);
+                open(OPEN_MODE_RW);
                 Message[] messages = getMessages(null, false);
                 for (int i = mVisibleLimit; i < messages.length; i++) {
                     if (listener != null) {
@@ -1643,7 +1656,7 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public Void doDbWork(final SQLiteDatabase db) throws WrappedException {
                         try {
-                            open(OpenMode.READ_WRITE);
+                            open(OPEN_MODE_RW);
                         } catch (MessagingException e) {
                             throw new WrappedException(e);
                         }
@@ -1714,7 +1727,7 @@ public class LocalStore extends Store implements Serializable {
         }
 
         private String getPrefId() throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             return getPrefId(mName);
 
         }
@@ -1814,7 +1827,7 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public Void doDbWork(final SQLiteDatabase db) throws WrappedException {
                         try {
-                            open(OpenMode.READ_WRITE);
+                            open(OPEN_MODE_RW);
                             if (fp.contains(FetchProfile.Item.BODY)) {
                                 for (Message message : messages) {
                                     LocalMessage localMessage = (LocalMessage)message;
@@ -2001,7 +2014,7 @@ public class LocalStore extends Store implements Serializable {
         @Override
         public Message[] getMessages(int start, int end, Date earliestDate, MessageRetrievalListener listener)
         throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             throw new MessagingException(
                 "LocalStore.getMessages(int, int, MessageRetrievalListener) not yet implemented");
         }
@@ -2065,7 +2078,7 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public String doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
                         try {
-                            open(OpenMode.READ_WRITE);
+                            open(OPEN_MODE_RW);
                             Cursor cursor = null;
 
                             try {
@@ -2099,7 +2112,7 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public LocalMessage doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
                         try {
-                            open(OpenMode.READ_WRITE);
+                            open(OPEN_MODE_RW);
                             LocalMessage message = new LocalMessage(uid, LocalFolder.this);
                             Cursor cursor = null;
 
@@ -2143,7 +2156,7 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public Message[] doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
                         try {
-                            open(OpenMode.READ_WRITE);
+                            open(OPEN_MODE_RW);
                             return LocalStore.this.getMessages(
                                        listener,
                                        LocalFolder.this,
@@ -2168,7 +2181,7 @@ public class LocalStore extends Store implements Serializable {
         @Override
         public Message[] getMessages(String[] uids, MessageRetrievalListener listener)
         throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             if (uids == null) {
                 return getMessages(listener);
             }
@@ -2205,7 +2218,7 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public Void doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
                         try {
-                            lDestFolder.open(OpenMode.READ_WRITE);
+                            lDestFolder.open(OPEN_MODE_RW);
                             for (Message message : msgs) {
                                 LocalMessage lMessage = (LocalMessage)message;
 
@@ -2262,7 +2275,7 @@ public class LocalStore extends Store implements Serializable {
                                  */
 
                                 // We need to open this folder to get the folder id
-                                open(OpenMode.READ_WRITE);
+                                open(OPEN_MODE_RW);
 
                                 cv.clear();
                                 cv.put("uid", oldUID);
@@ -2423,7 +2436,7 @@ public class LocalStore extends Store implements Serializable {
          * @return Map<String, String> uidMap of srcUids -> destUids
          */
         private Map<String, String> appendMessages(final Message[] messages, final boolean copy) throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             try {
                 final Map<String, String> uidMap = new HashMap<String, String>();
                 database.execute(true, new DbCallback<Void>() {
@@ -2592,7 +2605,7 @@ public class LocalStore extends Store implements Serializable {
          * @throws MessagingException
          */
         public void updateMessage(final LocalMessage message) throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             try {
                 database.execute(false, new DbCallback<Void>() {
                     @Override
@@ -2900,7 +2913,7 @@ public class LocalStore extends Store implements Serializable {
          * @throws com.fsck.k9.mail.MessagingException
          */
         public void changeUid(final LocalMessage message) throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             final ContentValues cv = new ContentValues();
             cv.put("uid", message.getUid());
             database.execute(false, new DbCallback<Void>() {
@@ -2919,7 +2932,7 @@ public class LocalStore extends Store implements Serializable {
         @Override
         public void setFlags(final Message[] messages, final Flag[] flags, final boolean value)
         throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
 
             // Use one transaction to set all flags
             try {
@@ -2947,7 +2960,7 @@ public class LocalStore extends Store implements Serializable {
         @Override
         public void setFlags(Flag[] flags, boolean value)
         throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             for (Message message : getMessages(null)) {
                 message.setFlags(flags, value);
             }
@@ -2959,7 +2972,7 @@ public class LocalStore extends Store implements Serializable {
         }
 
         public void clearMessagesOlderThan(long cutoff) throws MessagingException {
-            open(OpenMode.READ_ONLY);
+            open(OPEN_MODE_RO);
 
             Message[] messages  = LocalStore.this.getMessages(
                                       null,
@@ -2983,7 +2996,7 @@ public class LocalStore extends Store implements Serializable {
         public void clearAllMessages() throws MessagingException {
             final String[] folderIdArg = new String[] { Long.toString(mFolderId) };
 
-            open(OpenMode.READ_ONLY);
+            open(OPEN_MODE_RO);
 
             try {
                 database.execute(false, new DbCallback<Void>() {
@@ -3096,7 +3109,7 @@ public class LocalStore extends Store implements Serializable {
                     public Void doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
                         try {
                             // We need to open the folder first to make sure we've got it's id
-                            open(OpenMode.READ_ONLY);
+                            open(OPEN_MODE_RO);
                             Message[] messages = getMessages(null);
                             for (Message message : messages) {
                                 deleteAttachments(message.getUid());
@@ -3128,7 +3141,7 @@ public class LocalStore extends Store implements Serializable {
         }
 
         private void deleteAttachments(final long messageId) throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             database.execute(false, new DbCallback<Void>() {
                 @Override
                 public Void doDbWork(final SQLiteDatabase db) throws WrappedException, UnavailableStorageException {
@@ -3171,7 +3184,7 @@ public class LocalStore extends Store implements Serializable {
         }
 
         private void deleteAttachments(final String uid) throws MessagingException {
-            open(OpenMode.READ_WRITE);
+            open(OPEN_MODE_RW);
             try {
                 database.execute(false, new DbCallback<Void>() {
                     @Override
@@ -3235,7 +3248,7 @@ public class LocalStore extends Store implements Serializable {
                 public Integer doDbWork(final SQLiteDatabase db) {
                     Cursor cursor = null;
                     try {
-                        open(OpenMode.READ_ONLY);
+                        open(OPEN_MODE_RO);
                         cursor = db.rawQuery("SELECT MAX(uid) FROM messages WHERE folder_id=?", new String[] { Long.toString(mFolderId) });
                         if (cursor.getCount() > 0) {
                             cursor.moveToFirst();
@@ -3260,7 +3273,7 @@ public class LocalStore extends Store implements Serializable {
                 public Long doDbWork(final SQLiteDatabase db) {
                     Cursor cursor = null;
                     try {
-                        open(OpenMode.READ_ONLY);
+                        open(OPEN_MODE_RO);
                         cursor = db.rawQuery("SELECT MIN(date) FROM messages WHERE folder_id=?", new String[] { Long.toString(mFolderId) });
                         if (cursor.getCount() > 0) {
                             cursor.moveToFirst();
@@ -3387,7 +3400,7 @@ public class LocalStore extends Store implements Serializable {
                     @Override
                     public List<Message> doDbWork(final SQLiteDatabase db) throws WrappedException {
                         try {
-                            open(OpenMode.READ_WRITE);
+                            open(OPEN_MODE_RW);
                         } catch (MessagingException e) {
                             throw new WrappedException(e);
                         }
@@ -3540,7 +3553,7 @@ public class LocalStore extends Store implements Serializable {
 
             if (this.mFolder == null) {
                 LocalFolder f = new LocalFolder(cursor.getInt(13));
-                f.open(LocalFolder.OpenMode.READ_WRITE);
+                f.open(LocalFolder.OPEN_MODE_RW);
                 this.mFolder = f;
             }
 
@@ -4059,11 +4072,15 @@ public class LocalStore extends Store implements Serializable {
         @Override
         public void writeTo(OutputStream out) throws IOException, MessagingException {
             InputStream in = getInputStream();
-            Base64OutputStream base64Out = new Base64OutputStream(out);
             try {
-                IOUtils.copy(in, base64Out);
+                Base64OutputStream base64Out = new Base64OutputStream(out);
+                try {
+                    IOUtils.copy(in, base64Out);
+                } finally {
+                    base64Out.close();
+                }
             } finally {
-                base64Out.close();
+                in.close();
             }
         }
 

@@ -508,7 +508,7 @@ public class FolderList extends K9ListActivity {
                 return;
             }
             localFolder = account.getLocalStore().getFolder(folderName);
-            localFolder.open(Folder.OpenMode.READ_WRITE);
+            localFolder.open(Folder.OPEN_MODE_RW);
             localFolder.clearAllMessages();
         } catch (Exception e) {
             Log.e(K9.LOG_TAG, "Exception while clearing folder", e);
@@ -1230,7 +1230,7 @@ public class FolderList extends K9ListActivity {
                 holder.newMessageCountWrapper.setVisibility(View.GONE);
             }
 
-            if (folder.flaggedMessageCount > 0) {
+            if (K9.messageListStars() && folder.flaggedMessageCount > 0) {
                 holder.flaggedMessageCount.setText(Integer.toString(folder.flaggedMessageCount));
                 holder.flaggedMessageCountWrapper.setOnClickListener(
                         createFlaggedSearch(mAccount, folder));
@@ -1248,8 +1248,8 @@ public class FolderList extends K9ListActivity {
                 }
             });
 
-            holder.chip.setBackgroundDrawable(mAccount.generateColorChip(
-                    folder.unreadMessageCount == 0, false, false, false,false).drawable());
+            holder.chip.setBackgroundColor(mAccount.getChipColor());
+
 
             mFontSizes.setViewTextSize(holder.folderName, mFontSizes.getFolderName());
 
