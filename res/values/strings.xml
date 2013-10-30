@@ -342,6 +342,20 @@ Please submit bug reports, contribute new features and ask questions at
     <string name="global_settings_notification_quick_delete_always">Always</string>
     <string name="global_settings_notification_quick_delete_description">Show a button in the notification that allows quick message deletion</string>
 
+    <string name="global_settings_batch_buttons">Batch buttons</string>
+    <string name="global_settings_batch_buttons_summary">Configure message list batch buttons</string>
+    <string name="global_settings_mark_read">Mark read/unread</string>
+    <string name="global_settings_delete">Delete</string>
+    <string name="global_settings_archive">Move to archive</string>
+    <string name="global_settings_archive_disabled_reason">No archive folders.</string>
+    <string name="global_settings_move">Move</string>
+    <string name="global_settings_flag">Flag</string>
+    <string name="global_settings_unselect">Unselect</string>
+
+    <string name="global_settings_recipient_address_format_label">Recipient address format</string>
+    <string name="global_settings_recipient_address_format_name_and_address">Name and Address</string>
+    <string name="global_settings_recipient_address_format_address_only">Address only</string>
+
     <string name="quiet_time">Quiet Time</string>
     <string name="quiet_time_description">Disable ringing, buzzing and flashing at night</string>
     <string name="quiet_time_starts">Quiet Time starts</string>

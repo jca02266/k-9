@@ -246,6 +246,9 @@ public class GlobalSettings {
         s.put("messageViewSpamActionVisible", Settings.versions(
                 new V(30, new BooleanSetting(false))
             ));
+        s.put("addressFormat", Settings.versions(
+                new V(30, new EnumSetting<K9.RecipientAddressFormat>(K9.RecipientAddressFormat.class, K9.DEFAULT_RECIPIENT_ADDRESS_FORMAT))
+            ));
         s.put("fontSizeMessageViewContentPercent", Settings.versions(
                 new V(31, new IntegerRangeSetting(40, 250, 100))
             ));
