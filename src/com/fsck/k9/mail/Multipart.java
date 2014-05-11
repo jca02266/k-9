@@ -57,11 +57,6 @@ public abstract class Multipart implements CompositeBody {
     }
 
     public void setEncoding(String encoding) throws MessagingException {
-        if (!MimeUtil.ENC_7BIT.equalsIgnoreCase(encoding)
-                && !MimeUtil.ENC_8BIT.equalsIgnoreCase(encoding)) {
-            throw new MessagingException(
-                    "Incompatible content-transfer-encoding applied to a CompositeBody");
-        }
         for (BodyPart part : mParts) {
             try {
                 Body body = part.getBody();
