@@ -2,8 +2,10 @@ package com.fsck.k9.controller;
 
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -13,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -62,6 +65,7 @@ import com.fsck.k9.helper.Contacts;
 import com.fsck.k9.helper.NotificationBuilder;
 import com.fsck.k9.helper.power.TracingPowerManager;
 import com.fsck.k9.helper.power.TracingPowerManager.TracingWakeLock;
+import com.fsck.k9.logcat.Logcat;
 import com.fsck.k9.mail.Address;
 import com.fsck.k9.mail.FetchProfile;
 import com.fsck.k9.mail.Flag;
@@ -2706,6 +2710,33 @@ public class MessagingController implements Runnable {
 
             if (subject == null) {
                 subject = getRootCauseMessage(t);
+            }
+
+            addErrorMessage(account, subject, baos.toString());
+        } catch (Throwable it) {
+            Log.e(K9.LOG_TAG, "Could not save error message to " + account.getErrorFolderName(), it);
+        }
+    }
+
+    public void addLogcat(Account account, String subject) {
+        try {
+            CharArrayWriter baos = new CharArrayWriter(1024);
+            PrintWriter ps = new PrintWriter(baos);
+            try {
+                PackageInfo packageInfo = mApplication.getPackageManager().getPackageInfo(
+                        mApplication.getPackageName(), 0);
+                ps.format("K9-Mail version: %s\r\n", packageInfo.versionName);
+            } catch (Exception e) {
+                // ignore
+            }
+            ps.format("Device make: %s\r\n", Build.MANUFACTURER);
+            ps.format("Device model: %s\r\n", Build.MODEL);
+            ps.format("Android version: %s\r\n\r\n", Build.VERSION.RELEASE);
+            Logcat.print(ps);
+            ps.close();
+
+            if (subject == null) {
+                subject = "logcat " + new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.US).format(Calendar.getInstance().getTime());
             }
 
             addErrorMessage(account, subject, baos.toString());

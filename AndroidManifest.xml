@@ -53,6 +53,7 @@
                 android:label="@string/delete_messages_label"
                 android:description="@string/delete_messages_desc"/>
     <uses-permission android:name="com.fsck.k9.permission.DELETE_MESSAGES"/>
+    <uses-permission android:name="android.permission.READ_LOGS" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
     <application
         android:icon="@drawable/icon"
@@ -280,6 +281,21 @@
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT" />
                 <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+                android:name=".activity.K9LogcatShortcut"
+                android:label="K9 Logcat"
+                android:configChanges="locale"
+                >
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_SHORTCUT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".activity.LogcatActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
             </intent-filter>
         </activity>
         <activity
