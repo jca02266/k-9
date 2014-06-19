@@ -2,6 +2,7 @@ package com.fsck.k9;
 
 import android.content.SharedPreferences;
 import android.util.TypedValue;
+import android.webkit.WebSettings.TextSize;
 import android.widget.TextView;
 
 import com.fsck.k9.preferences.GlobalSettings;
@@ -329,6 +330,29 @@ public class FontSizes {
 
     public void setMessageViewDate(int messageViewDate) {
         this.messageViewDate = messageViewDate;
+    }
+
+    /**
+     * Font size of the message content in the message view activity.
+     *
+     * Note: The unit is WebSettings.TextSize, this option is used only on Android 3.2 (API level 13) and below.
+     */
+    public TextSize getMessageViewContent() {
+        if (messageViewContentPercent < 50) {
+            return TextSize.SMALLEST;
+        }
+        else if (messageViewContentPercent < 75) {
+            return TextSize.SMALLER;
+        }
+        else if (messageViewContentPercent < 150) {
+            return TextSize.NORMAL;
+        }
+        else if (messageViewContentPercent < 225) {
+            return TextSize.LARGER;
+        }
+        else {
+            return TextSize.LARGEST;
+        }
     }
 
     public int getMessageViewContentAsPercent() {
