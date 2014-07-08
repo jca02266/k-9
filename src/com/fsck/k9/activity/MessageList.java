@@ -1244,12 +1244,18 @@ public class MessageList extends K9FragmentActivity implements MessageListFragme
         if (mMessageListFragment != null && mDisplayMode != DisplayMode.MESSAGE_VIEW) {
             mMessageListFragment.onSwipeRightToLeft(e1, e2);
         }
+        if (mMessageViewFragment != null && mDisplayMode == DisplayMode.MESSAGE_VIEW && K9.gesturesEnabled()) {
+            showNextMessage();
+        }
     }
 
     @Override
     public void onSwipeLeftToRight(MotionEvent e1, MotionEvent e2) {
         if (mMessageListFragment != null && mDisplayMode != DisplayMode.MESSAGE_VIEW) {
             mMessageListFragment.onSwipeLeftToRight(e1, e2);
+        }
+        if (mMessageViewFragment != null && mDisplayMode == DisplayMode.MESSAGE_VIEW && K9.gesturesEnabled()) {
+            showPreviousMessage();
         }
     }
 
