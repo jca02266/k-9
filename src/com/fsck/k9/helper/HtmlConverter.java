@@ -420,7 +420,6 @@ public class HtmlConverter {
     public static String convertEmoji2Img(String html, Address[] fromAddrs) {
         if (!hasEmoji(html)) {
             return html;
-
         }
 
         int carrier = 0;
@@ -483,7 +482,7 @@ public class HtmlConverter {
         case 0xFE009: return "E63E";    // Docomo
         case 0xFE00A: return "E63E";    // Docomo
         case 0xFE00C: return "E63E";    // Docomo
-        case 0xFE00F: return "E63EE63F";    // Docomo
+        case 0xFE00F: return "E9A7";    // KDDI
         case 0xFE010: return "E6B3";    // Docomo
         case 0xFE011: return "E69C";    // Docomo
         case 0xFE012: return "E69D";    // Docomo
@@ -623,7 +622,7 @@ public class HtmlConverter {
         case 0xFE4B5: return "E667";    // Docomo
         case 0xFE4B6: return "E668";    // Docomo
         case 0xFE4B7: return "E669";    // Docomo
-        case 0xFE4B8: return "E669E6EF";    // Docomo
+        case 0xFE4B8: return "EAEC";    // KDDI
         case 0xFE4B9: return "E66A";    // Docomo
         case 0xFE4BA: return "E73E";    // Docomo
         case 0xFE4C1: return "E661";    // Docomo
@@ -1100,7 +1099,7 @@ public class HtmlConverter {
         case 0xFE32E: return "EAC0";    // KDDI
         case 0xFE32F: return "EAC1";    // KDDI
         case 0xFE330: return "EA01";    // KDDI
-        case 0xFE331: return "E471E5B1";    // KDDI
+        case 0xFE331: return "E722";    // Docomo
         case 0xFE332: return "EABE";    // KDDI
         case 0xFE333: return "EB79";    // KDDI
         case 0xFE334: return "EB5D";    // KDDI
@@ -1635,7 +1634,7 @@ public class HtmlConverter {
         case 0xFE00B: return "E146";    // SoftBank
         case 0xFE00C: return "E44A";    // SoftBank
         case 0xFE00D: return "E44C";    // SoftBank
-        case 0xFE00F: return "E04AE049";    // SoftBank
+        case 0xFE00F: return "E9A7";    // KDDI
         case 0xFE010: return "E44B";    // SoftBank
         case 0xFE012: return "E04C";    // SoftBank
         case 0xFE013: return "E04C";    // SoftBank
@@ -1781,7 +1780,7 @@ public class HtmlConverter {
         case 0xFE32E: return "E40C";    // SoftBank
         case 0xFE32F: return "E40D";    // SoftBank
         case 0xFE330: return "E057";    // SoftBank
-        case 0xFE331: return "E415E331";    // SoftBank
+        case 0xFE331: return "E722";    // Docomo
         case 0xFE332: return "E40A";    // SoftBank
         case 0xFE333: return "E404";    // SoftBank
         case 0xFE334: return "E412";    // SoftBank
@@ -2022,7 +2021,7 @@ public class HtmlConverter {
         case 0xFE820: return "E129";    // SoftBank
         case 0xFE821: return "E141";    // SoftBank
         case 0xFE823: return "E003";    // SoftBank
-        case 0xFE824: return "E103E328";    // SoftBank
+        case 0xFE824: return "EB71";    // KDDI
         case 0xFE825: return "E034";    // SoftBank
         case 0xFE826: return "E035";    // SoftBank
         case 0xFE827: return "E111";    // SoftBank
