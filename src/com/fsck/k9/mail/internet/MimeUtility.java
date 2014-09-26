@@ -2277,9 +2277,7 @@ public class MimeUtility {
             charset = "shift_jis";
 
         if (charset.equals("shift_jis") || charset.equals("iso-2022-jp")) {
-            String variant = Emoji.getJisVariantFromMessage(message);
-            if (variant != null)
-                charset = "x-" + variant + "-" + charset + "-2007";
+            charset = Emoji.getJisVariantFromMessage(message, charset);
         }
         return charset;
     }

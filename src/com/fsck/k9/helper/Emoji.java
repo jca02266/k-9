@@ -5,14 +5,22 @@ import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 
 import java.nio.charset.Charset;
+import java.util.Locale;
 
 public class Emoji {
-    public enum Carrier {DOCOMO, SOFTBANK, KDDI, OTHER}
+    public enum Carrier {
+        DOCOMO, SOFTBANK, KDDI, OTHER;
+
+        @Override
+        public String toString() {
+            return name().toLowerCase(Locale.ENGLISH);
+        }
+    }
 
     public static String getCharsetFromAddress(String address) {
-        String variant = getJisVariantFromAddress(address);
-        if (variant != null) {
-            String charset = "x-" + variant + "-shift_jis-2007";
+        Carrier carrier = getEmojiCarrierFromAddress(address);
+        if (carrier != null) {
+            String charset = "x-" + carrier + "-shift_jis-2007";
             if (Charset.isSupported(charset))
                 return charset;
         }
@@ -20,6 +28,13 @@ public class Emoji {
         return null;
     }
 
+    public static String getJisVariantFromMessage(Message message, String charset) throws MessagingException {
+        String emojiCharset = getJisVariantFromMessage(message);
+        if (emojiCharset != null)
+            return "x-" + emojiCharset + "-" + charset + "-2007";
+
+        return charset;
+    }
 
     public static String getJisVariantFromMessage(Message message) throws MessagingException {
         if (message == null)
@@ -27,20 +42,20 @@ public class Emoji {
 
         // If a receiver is known to use a JIS variant, the sender transfers the message after converting the
         // charset as a convention.
-        String variant = getJisVariantFromReceivedHeaders(message);
-        if (variant != null)
-            return variant;
+        Carrier carrier = getEmojiCarrierFromReceivedHeaders(message);
+        if (carrier != null)
+            return carrier.toString();
 
         // If a receiver is not known to use any JIS variants, the sender transfers the message without converting
         // the charset.
-        variant = getJisVariantFromFromHeaders(message);
-        if (variant != null)
-            return variant;
+        carrier = getEmojiCarrierFromFromHeaders(message);
+        if (carrier != null)
+            return carrier.toString();
 
-        return getJisVariantFromMailerHeaders(message);
+        return getEmojiCarrierFromMailerHeaders(message);
     }
 
-    private static String getJisVariantFromReceivedHeaders(Message message) throws MessagingException {
+    private static Carrier getEmojiCarrierFromReceivedHeaders(Message message) throws MessagingException {
         String receivedHeaders[] = message.getHeader("Received");
         if (receivedHeaders == null)
             return null;
@@ -49,9 +64,9 @@ public class Emoji {
             String address = getAddressFromReceivedHeader(receivedHeader);
             if (address == null)
                 continue;
-            String variant = getJisVariantFromAddress(address);
-            if (variant != null)
-                return variant;
+            Carrier carrier = getEmojiCarrierFromAddress(address);
+            if (carrier != null)
+                return carrier;
         }
         return null;
     }
@@ -61,26 +76,26 @@ public class Emoji {
         return null;
     }
 
-    private static String getJisVariantFromFromHeaders(Message message) throws MessagingException {
+    private static Carrier getEmojiCarrierFromFromHeaders(Message message) throws MessagingException {
         Address addresses[] = message.getFrom();
         if (addresses == null || addresses.length == 0)
             return null;
 
-        return getJisVariantFromAddress(addresses[0].getAddress());
+        return getEmojiCarrierFromAddress(addresses[0].getAddress());
     }
 
-    public static String getJisVariantFromAddress(String address) {
+    public static Carrier getEmojiCarrierFromAddress(String address) {
         if (address == null)
             return null;
         if (isInDomain(address, "docomo.ne.jp") || isInDomain(address, "dwmail.jp") ||
                 isInDomain(address, "pdx.ne.jp") || isInDomain(address, "willcom.com") ||
                 isInDomain(address, "emnet.ne.jp") || isInDomain(address, "emobile.ne.jp"))
-            return "docomo";
+            return Carrier.DOCOMO;
         else if (isInDomain(address, "softbank.ne.jp") || isInDomain(address, "vodafone.ne.jp") ||
                 isInDomain(address, "disney.ne.jp") || isInDomain(address, "vertuclub.ne.jp"))
-            return "softbank";
+            return Carrier.SOFTBANK;
         else if (isInDomain(address, "ezweb.ne.jp") || isInDomain(address, "ido.ne.jp"))
-            return "kddi";
+            return Carrier.KDDI;
         return null;
     }
 
@@ -96,7 +111,7 @@ public class Emoji {
         return address.endsWith(domain);
     }
 
-    private static String getJisVariantFromMailerHeaders(Message message) throws MessagingException {
+    private static String getEmojiCarrierFromMailerHeaders(Message message) throws MessagingException {
         String mailerHeaders[] = message.getHeader("X-Mailer");
         if (mailerHeaders == null || mailerHeaders.length == 0)
             return null;
@@ -128,19 +143,7 @@ public class Emoji {
 
         Carrier carrier = Carrier.OTHER;
         if (fromAddrs != null && fromAddrs.length > 0) {
-            String from = getJisVariantFromAddress(fromAddrs[0].getAddress());
-            if ("docomo".equals(from)) {
-                carrier = Carrier.DOCOMO;
-            }
-            else if ("softbank".equals(from)) {
-                carrier = Carrier.SOFTBANK;
-            }
-            else if ("kddi".equals(from)) {
-                carrier = Carrier.KDDI;
-            }
-            else {
-                carrier = Carrier.OTHER;
-            }
+            carrier = getEmojiCarrierFromAddress(fromAddrs[0].getAddress());
         }
 
         StringBuilder buff = new StringBuilder(html.length() + 512);
