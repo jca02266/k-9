@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import com.fsck.k9.helper.Emoji;
+import com.fsck.k9.helper.EmojiHelper;
 import org.apache.commons.io.IOUtils;
 import org.apache.james.mime4j.codec.QuotedPrintableOutputStream;
 import org.apache.james.mime4j.util.MimeUtil;
@@ -49,7 +49,6 @@ import com.fsck.k9.Account.MessageFormat;
 import com.fsck.k9.activity.Search;
 import com.fsck.k9.controller.MessageRemovalListener;
 import com.fsck.k9.controller.MessageRetrievalListener;
-import com.fsck.k9.helper.HtmlConverter;
 import com.fsck.k9.helper.StringUtils;
 import com.fsck.k9.helper.Utility;
 import com.fsck.k9.mail.Address;
@@ -2529,7 +2528,7 @@ public class LocalStore extends Store implements Serializable {
 
                                     attachments = container.attachments;
                                     text = container.text;
-                                    html = Emoji.convertEmoji2Img(container.html, message.getFrom());
+                                    html = EmojiHelper.convertEmoji2Img(container.html, message.getFrom());
                                 }
 
                                 String preview = Message.calculateContentPreview(text);
@@ -2635,7 +2634,7 @@ public class LocalStore extends Store implements Serializable {
 
                             List<Part> attachments = container.attachments;
                             String text = container.text;
-                            String html = Emoji.convertEmoji2Img(container.html, message.getFrom());
+                            String html = EmojiHelper.convertEmoji2Img(container.html, message.getFrom());
 
                             String preview = Message.calculateContentPreview(text);
 

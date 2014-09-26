@@ -4,7 +4,7 @@ package com.fsck.k9.mail.transport;
 import android.util.Log;
 import com.fsck.k9.Account;
 import com.fsck.k9.K9;
-import com.fsck.k9.helper.Emoji;
+import com.fsck.k9.helper.EmojiHelper;
 import com.fsck.k9.mail.*;
 import com.fsck.k9.mail.Message.RecipientType;
 import com.fsck.k9.mail.filter.Base64;
@@ -448,7 +448,7 @@ public class SmtpTransport extends Transport {
             new HashMap<String, ArrayList<String>>();
         for (Address address : addresses) {
             String addressString = address.getAddress();
-            String charset = Emoji.getCharsetFromAddress(addressString);
+            String charset = EmojiHelper.getCharsetFromAddress(addressString);
             if (charset == null) {
                 charset = defaultCharset;
             }

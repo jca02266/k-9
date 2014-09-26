@@ -7,7 +7,7 @@ import com.fsck.k9.mail.MessagingException;
 import java.nio.charset.Charset;
 import java.util.Locale;
 
-public class Emoji {
+public class EmojiHelper {
     public enum Carrier {
         DOCOMO, SOFTBANK, KDDI, OTHER,
         IPHONE; // special case

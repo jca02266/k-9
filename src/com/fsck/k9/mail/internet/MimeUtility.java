@@ -5,7 +5,7 @@ import android.content.Context;
 import android.util.Log;
 import com.fsck.k9.K9;
 import com.fsck.k9.R;
-import com.fsck.k9.helper.Emoji;
+import com.fsck.k9.helper.EmojiHelper;
 import com.fsck.k9.helper.HtmlConverter;
 import com.fsck.k9.mail.*;
 import com.fsck.k9.mail.Message.RecipientType;
@@ -2277,7 +2277,7 @@ public class MimeUtility {
             charset = "shift_jis";
 
         if (charset.equals("shift_jis") || charset.equals("iso-2022-jp")) {
-            charset = Emoji.getCharsetFromMessage(message, charset);
+            charset = EmojiHelper.getCharsetFromMessage(message, charset);
         }
         return charset;
     }
