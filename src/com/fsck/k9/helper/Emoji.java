@@ -9,7 +9,8 @@ import java.util.Locale;
 
 public class Emoji {
     public enum Carrier {
-        DOCOMO, SOFTBANK, KDDI, OTHER;
+        DOCOMO, SOFTBANK, KDDI, OTHER,
+        IPHONE; // special case
 
         @Override
         public String toString() {
@@ -17,6 +18,7 @@ public class Emoji {
         }
     }
 
+    // for seinding mail
     public static String getCharsetFromAddress(String address) {
         Carrier carrier = getEmojiCarrierFromAddress(address);
         if (carrier != null) {
@@ -28,15 +30,16 @@ public class Emoji {
         return null;
     }
 
-    public static String getJisVariantFromMessage(Message message, String charset) throws MessagingException {
-        String emojiCharset = getJisVariantFromMessage(message);
-        if (emojiCharset != null)
-            return "x-" + emojiCharset + "-" + charset + "-2007";
+    // for received mail
+    public static String getCharsetFromMessage(Message message, String charset) throws MessagingException {
+        Carrier carrier = getEmojiCarrierFromMessage(message);
+        if (carrier != null)
+            return "x-" + carrier + "-" + charset + "-2007";
 
         return charset;
     }
 
-    public static String getJisVariantFromMessage(Message message) throws MessagingException {
+    private static Carrier getEmojiCarrierFromMessage(Message message) throws MessagingException {
         if (message == null)
             return null;
 
@@ -44,13 +47,13 @@ public class Emoji {
         // charset as a convention.
         Carrier carrier = getEmojiCarrierFromReceivedHeaders(message);
         if (carrier != null)
-            return carrier.toString();
+            return carrier;
 
         // If a receiver is not known to use any JIS variants, the sender transfers the message without converting
         // the charset.
         carrier = getEmojiCarrierFromFromHeaders(message);
         if (carrier != null)
-            return carrier.toString();
+            return carrier;
 
         return getEmojiCarrierFromMailerHeaders(message);
     }
@@ -111,13 +114,13 @@ public class Emoji {
         return address.endsWith(domain);
     }
 
-    private static String getEmojiCarrierFromMailerHeaders(Message message) throws MessagingException {
+    private static Carrier getEmojiCarrierFromMailerHeaders(Message message) throws MessagingException {
         String mailerHeaders[] = message.getHeader("X-Mailer");
         if (mailerHeaders == null || mailerHeaders.length == 0)
             return null;
 
         if (mailerHeaders[0].startsWith("iPhone Mail ") || mailerHeaders[0].startsWith("iPad Mail "))
-            return "iphone";
+            return Carrier.IPHONE;
 
         return null;
     }
