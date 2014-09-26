@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import com.fsck.k9.helper.Emoji;
 import org.apache.commons.io.IOUtils;
 import org.apache.james.mime4j.codec.QuotedPrintableOutputStream;
 import org.apache.james.mime4j.util.MimeUtil;
@@ -2528,7 +2529,7 @@ public class LocalStore extends Store implements Serializable {
 
                                     attachments = container.attachments;
                                     text = container.text;
-                                    html = HtmlConverter.convertEmoji2Img(container.html, message.getFrom());
+                                    html = Emoji.convertEmoji2Img(container.html, message.getFrom());
                                 }
 
                                 String preview = Message.calculateContentPreview(text);
@@ -2634,7 +2635,7 @@ public class LocalStore extends Store implements Serializable {
 
                             List<Part> attachments = container.attachments;
                             String text = container.text;
-                            String html = HtmlConverter.convertEmoji2Img(container.html, message.getFrom());
+                            String html = Emoji.convertEmoji2Img(container.html, message.getFrom());
 
                             String preview = Message.calculateContentPreview(text);
 
