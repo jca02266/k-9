@@ -140,9 +140,9 @@ public class EmojiHelper {
     }
 
     public static String convertEmoji2Img(String html, Address[] fromAddrs) {
-        if (!hasEmoji(html)) {
-            return html;
-        }
+//        if (!hasEmoji(html)) {
+//            return html;
+//        }
 
         Carrier carrier = Carrier.OTHER;
         if (fromAddrs != null && fromAddrs.length > 0) {
@@ -182,10 +182,14 @@ public class EmojiHelper {
         }
     }
 
+    /*
+     * Google Code 0xFE000-0xFEE33
+     * Docomo Code 0xE63E-0xE757
+     */
     private static String getEmojiForCodePointDocomo(int codePoint) {
 
         switch (codePoint) {
-
+            // Google Code -> DoCoMo
             case 0xFE000: return "E63E";    // Docomo
             case 0xFE001: return "E63F";    // Docomo
             case 0xFE002: return "E640";    // Docomo
@@ -625,10 +629,417 @@ public class EmojiHelper {
             case 0xFEE32: return "E6CC";    // Docomo
             case 0xFEE33: return "E6CD";    // Docomo
 
+            // Unicode6
+            case 0x002320E3: return "E6E0";
+            case 0x003020E3: return "E6EB";
+            case 0x003120E3: return "E6E2";
+            case 0x003220E3: return "E6E3";
+            case 0x003320E3: return "E6E4";
+            case 0x003420E3: return "E6E5";
+            case 0x003520E3: return "E6E6";
+            case 0x003620E3: return "E6E7";
+            case 0x003720E3: return "E6E8";
+            case 0x003820E3: return "E6E9";
+            case 0x003920E3: return "E6EA";
+            case 0x00A9: return "E731";
+            case 0x00AE: return "E736";
+            case 0x203C: return "E704";
+            case 0x2049: return "E703";
+            case 0x2122: return "E732";
+            case 0x2194: return "E73C";
+            case 0x2195: return "E73D";
+            case 0x2196: return "E697";
+            case 0x2197: return "E678";
+            case 0x2198: return "E696";
+            case 0x2199: return "E6A5";
+            case 0x21A9: return "E6DA";
+            case 0x231A: return "E71F";
+            case 0x231B: return "E71C";
+            case 0x23F0: return "E6BA";
+            case 0x23F3: return "E71C";
+            case 0x24C2: return "E65C";
+            case 0x2600: return "E63E";
+            case 0x2601: return "E63F";
+            case 0x260E: return "E687";
+            case 0x2614: return "E640";
+            case 0x2615: return "E670";
+            case 0x263A: return "E6F0";
+            case 0x2648: return "E646";
+            case 0x2649: return "E647";
+            case 0x264A: return "E648";
+            case 0x264B: return "E649";
+            case 0x264C: return "E64A";
+            case 0x264D: return "E64B";
+            case 0x264E: return "E64C";
+            case 0x264F: return "E64D";
+            case 0x2650: return "E64E";
+            case 0x2651: return "E64F";
+            case 0x2652: return "E650";
+            case 0x2653: return "E651";
+            case 0x2660: return "E68E";
+            case 0x2663: return "E690";
+            case 0x2665: return "E68D";
+            case 0x2666: return "E68F";
+            case 0x2668: return "E6F7";
+            case 0x267B: return "E735";
+            case 0x267F: return "E69B";
+            case 0x2693: return "E661";
+            case 0x26A0: return "E737";
+            case 0x26A1: return "E642";
+            case 0x26AA: return "E69C";
+            case 0x26AB: return "E69C";
+            case 0x26BD: return "E656";
+            case 0x26BE: return "E653";
+            case 0x26C4: return "E641";
+            case 0x26C5: return "E63E+E63F";
+            case 0x26D4: return "E72F";
+            case 0x26F3: return "E654";
+            case 0x26F5: return "E6A3";
+            case 0x26FD: return "E66B";
+            case 0x2702: return "E675";
+            case 0x2708: return "E662";
+            case 0x2709: return "E6D3";
+            case 0x270A: return "E693";
+            case 0x270B: return "E695";
+            case 0x270C: return "E694";
+            case 0x270F: return "E719";
+            case 0x2712: return "E6AE";
+            case 0x2728: return "E6FA";
+            case 0x2733: return "E6F8";
+            case 0x2734: return "E6F8";
+            case 0x2747: return "E6FA";
+            case 0x2755: return "E702";
+            case 0x2757: return "E702";
+            case 0x2764: return "E6EC";
+            case 0x27B0: return "E70A";
+            case 0x27BF: return "E6DF";
+            case 0x2934: return "E6F5";
+            case 0x2935: return "E700";
+            case 0x2B55: return "E6A0";
+            case 0x3030: return "E709";
+            case 0x3299: return "E734";
+            case 0x1F17F: return "E66C";
+            case 0x1F191: return "E6DB";
+            case 0x1F193: return "E6D7";
+            case 0x1F194: return "E6D8";
+            case 0x1F195: return "E6DD";
+            case 0x1F196: return "E72F";
+            case 0x1F197: return "E70B";
+            case 0x1F232: return "E738";
+            case 0x1F233: return "E739";
+            case 0x1F234: return "E73A";
+            case 0x1F235: return "E73B";
+            case 0x1F300: return "E643";
+            case 0x1F301: return "E644";
+            case 0x1F302: return "E645";
+            case 0x1F303: return "E6B3";
+            case 0x1F304: return "E63E";
+            case 0x1F305: return "E63E";
+            case 0x1F307: return "E63E";
+            case 0x1F309: return "E6B3";
+            case 0x1F30A: return "E73F";
+            case 0x1F30C: return "E6B3";
+            case 0x1F311: return "E69C";
+            case 0x1F313: return "E69E";
+            case 0x1F314: return "E69D";
+            case 0x1F315: return "E6A0";
+            case 0x1F319: return "E69F";
+            case 0x1F31B: return "E69E";
+            case 0x1F331: return "E746";
+            case 0x1F337: return "E743";
+            case 0x1F338: return "E748";
+            case 0x1F33F: return "E741";
+            case 0x1F340: return "E741";
+            case 0x1F341: return "E747";
+            case 0x1F342: return "E747";
+            case 0x1F34C: return "E744";
+            case 0x1F34E: return "E745";
+            case 0x1F34F: return "E745";
+            case 0x1F352: return "E742";
+            case 0x1F354: return "E673";
+            case 0x1F359: return "E749";
+            case 0x1F35A: return "E74C";
+            case 0x1F35C: return "E74C";
+            case 0x1F35E: return "E74D";
+            case 0x1F365: return "E643";
+            case 0x1F370: return "E74A";
+            case 0x1F374: return "E66F";
+            case 0x1F375: return "E71E";
+            case 0x1F376: return "E74B";
+            case 0x1F377: return "E756";
+            case 0x1F378: return "E671";
+            case 0x1F379: return "E671";
+            case 0x1F37A: return "E672";
+            case 0x1F37B: return "E672";
+            case 0x1F380: return "E684";
+            case 0x1F381: return "E685";
+            case 0x1F382: return "E686";
+            case 0x1F384: return "E6A4";
+            case 0x1F3A0: return "E679";
+            case 0x1F3A3: return "E751";
+            case 0x1F3A4: return "E676";
+            case 0x1F3A5: return "E677";
+            case 0x1F3A6: return "E677";
+            case 0x1F3A7: return "E67A";
+            case 0x1F3A8: return "E67B";
+            case 0x1F3A9: return "E67C";
+            case 0x1F3AA: return "E67D";
+            case 0x1F3AB: return "E67E";
+            case 0x1F3AC: return "E6AC";
+            case 0x1F3AE: return "E68B";
+            case 0x1F3B5: return "E6F6";
+            case 0x1F3B6: return "E6FF";
+            case 0x1F3BC: return "E6FF";
+            case 0x1F3BD: return "E652";
+            case 0x1F3BE: return "E655";
+            case 0x1F3BF: return "E657";
+            case 0x1F3C0: return "E658";
+            case 0x1F3C1: return "E659";
+            case 0x1F3C2: return "E712";
+            case 0x1F3C3: return "E733";
+            case 0x1F3C4: return "E712";
+            case 0x1F3E0: return "E663";
+            case 0x1F3E1: return "E663";
+            case 0x1F3E2: return "E664";
+            case 0x1F3E3: return "E665";
+            case 0x1F3E5: return "E666";
+            case 0x1F3E6: return "E667";
+            case 0x1F3E7: return "E668";
+            case 0x1F3E8: return "E669";
+            case 0x1F3E9: return "E669+E6EF";
+            case 0x1F3EA: return "E66A";
+            case 0x1F3EB: return "E73E";
+            case 0x1F3EE: return "E74B";
+            case 0x1F40C: return "E74E";
+            case 0x1F40E: return "E754";
+            case 0x1F41F: return "E751";
+            case 0x1F420: return "E751";
+            case 0x1F421: return "E751";
+            case 0x1F423: return "E74F";
+            case 0x1F424: return "E74F";
+            case 0x1F425: return "E74F";
+            case 0x1F426: return "E74F";
+            case 0x1F427: return "E750";
+            case 0x1F429: return "E6A1";
+            case 0x1F431: return "E6A2";
+            case 0x1F434: return "E754";
+            case 0x1F436: return "E6A1";
+            case 0x1F437: return "E755";
+            case 0x1F43A: return "E6A1";
+            case 0x1F43D: return "E755";
+            case 0x1F43E: return "E698";
+            case 0x1F440: return "E691";
+            case 0x1F442: return "E692";
+            case 0x1F444: return "E6F9";
+            case 0x1F445: return "E728";
+            case 0x1F44A: return "E6FD";
+            case 0x1F44B: return "E695";
+            case 0x1F44C: return "E70B";
+            case 0x1F44D: return "E727";
+            case 0x1F44E: return "E700";
+            case 0x1F450: return "E695";
+            case 0x1F451: return "E71A";
+            case 0x1F453: return "E69A";
+            case 0x1F455: return "E70E";
+            case 0x1F456: return "E711";
+            case 0x1F45A: return "E70E";
+            case 0x1F45B: return "E70F";
+            case 0x1F45C: return "E682";
+            case 0x1F45D: return "E6AD";
+            case 0x1F45E: return "E699";
+            case 0x1F45F: return "E699";
+            case 0x1F460: return "E674";
+            case 0x1F461: return "E674";
+            case 0x1F463: return "E698";
+            case 0x1F464: return "E6B1";
+            case 0x1F466: return "E6F0";
+            case 0x1F467: return "E6F0";
+            case 0x1F468: return "E6F0";
+            case 0x1F469: return "E6F0";
+            case 0x1F484: return "E710";
+            case 0x1F487: return "E675";
+            case 0x1F48B: return "E6F9";
+            case 0x1F48C: return "E717";
+            case 0x1F48D: return "E71B";
+            case 0x1F48E: return "E71B";
+            case 0x1F48F: return "E6F9";
+            case 0x1F491: return "E6ED";
+            case 0x1F493: return "E6ED";
+            case 0x1F494: return "E6EE";
+            case 0x1F495: return "E6EF";
+            case 0x1F496: return "E6EC";
+            case 0x1F497: return "E6ED";
+            case 0x1F498: return "E6EC";
+            case 0x1F499: return "E6EC";
+            case 0x1F49A: return "E6EC";
+            case 0x1F49B: return "E6EC";
+            case 0x1F49C: return "E6EC";
+            case 0x1F49D: return "E6EC";
+            case 0x1F49E: return "E6ED";
+            case 0x1F49F: return "E6F8";
+            case 0x1F4A0: return "E6F8";
+            case 0x1F4A1: return "E6FB";
+            case 0x1F4A2: return "E6FC";
+            case 0x1F4A3: return "E6FE";
+            case 0x1F4A4: return "E701";
+            case 0x1F4A5: return "E705";
+            case 0x1F4A6: return "E706";
+            case 0x1F4A7: return "E707";
+            case 0x1F4A8: return "E708";
+            case 0x1F4B0: return "E715";
+            case 0x1F4B2: return "E715";
+            case 0x1F4B4: return "E6D6";
+            case 0x1F4B5: return "E715";
+            case 0x1F4BA: return "E6B2";
+            case 0x1F4BB: return "E716";
+            case 0x1F4BC: return "E682";
+            case 0x1F4BF: return "E68C";
+            case 0x1F4C0: return "E68C";
+            case 0x1F4C3: return "E689";
+            case 0x1F4C4: return "E689";
+            case 0x1F4C7: return "E683";
+            case 0x1F4CB: return "E689";
+            case 0x1F4CE: return "E730";
+            case 0x1F4D1: return "E689";
+            case 0x1F4D2: return "E683";
+            case 0x1F4D3: return "E683";
+            case 0x1F4D4: return "E683";
+            case 0x1F4D5: return "E683";
+            case 0x1F4D6: return "E683";
+            case 0x1F4D7: return "E683";
+            case 0x1F4D8: return "E683";
+            case 0x1F4D9: return "E683";
+            case 0x1F4DA: return "E683";
+            case 0x1F4DC: return "E70A";
+            case 0x1F4DD: return "E689";
+            case 0x1F4DE: return "E687";
+            case 0x1F4DF: return "E65A";
+            case 0x1F4E0: return "E6D0";
+            case 0x1F4E6: return "E685";
+            case 0x1F4E7: return "E6D3";
+            case 0x1F4E8: return "E6CF";
+            case 0x1F4E9: return "E6CF";
+            case 0x1F4EA: return "E665";
+            case 0x1F4EB: return "E665";
+            case 0x1F4EE: return "E665";
+            case 0x1F4F1: return "E688";
+            case 0x1F4F2: return "E6CE";
+            case 0x1F4F7: return "E681";
+            case 0x1F4F9: return "E677";
+            case 0x1F4FA: return "E68A";
+            case 0x1F503: return "E735";
+            case 0x1F50D: return "E6DC";
+            case 0x1F50E: return "E6DC";
+            case 0x1F50F: return "E6D9";
+            case 0x1F510: return "E6D9";
+            case 0x1F511: return "E6D9";
+            case 0x1F512: return "E6D9";
+            case 0x1F513: return "E6D9";
+            case 0x1F514: return "E713";
+            case 0x1F51A: return "E6B9";
+            case 0x1F51B: return "E6B8";
+            case 0x1F51C: return "E6B7";
+            case 0x1F526: return "E6FB";
+            case 0x1F527: return "E718";
+            case 0x1F531: return "E71A";
+            case 0x1F532: return "E69C";
+            case 0x1F533: return "E69C";
+            case 0x1F534: return "E69C";
+            case 0x1F535: return "E69C";
+            case 0x1F550: return "E6BA";
+            case 0x1F551: return "E6BA";
+            case 0x1F552: return "E6BA";
+            case 0x1F553: return "E6BA";
+            case 0x1F554: return "E6BA";
+            case 0x1F555: return "E6BA";
+            case 0x1F556: return "E6BA";
+            case 0x1F557: return "E6BA";
+            case 0x1F558: return "E6BA";
+            case 0x1F559: return "E6BA";
+            case 0x1F55A: return "E6BA";
+            case 0x1F55B: return "E6BA";
+            case 0x1F5FB: return "E740";
+            case 0x1F601: return "E753";
+            case 0x1F602: return "E72A";
+            case 0x1F603: return "E6F0";
+            case 0x1F604: return "E6F0";
+            case 0x1F605: return "E722";
+            case 0x1F606: return "E72A";
+            case 0x1F609: return "E729";
+            case 0x1F60A: return "E6F0";
+            case 0x1F60B: return "E752";
+            case 0x1F60C: return "E721";
+            case 0x1F60D: return "E726";
+            case 0x1F60F: return "E72C";
+            case 0x1F612: return "E725";
+            case 0x1F613: return "E723";
+            case 0x1F614: return "E720";
+            case 0x1F616: return "E6F3";
+            case 0x1F618: return "E726";
+            case 0x1F61A: return "E726";
+            case 0x1F61C: return "E728";
+            case 0x1F61D: return "E728";
+            case 0x1F61E: return "E6F2";
+            case 0x1F620: return "E6F1";
+            case 0x1F621: return "E724";
+            case 0x1F622: return "E72E";
+            case 0x1F623: return "E72B";
+            case 0x1F624: return "E753";
+            case 0x1F625: return "E723";
+            case 0x1F628: return "E757";
+            case 0x1F629: return "E6F3";
+            case 0x1F62A: return "E701";
+            case 0x1F62B: return "E72B";
+            case 0x1F62D: return "E72D";
+            case 0x1F630: return "E723";
+            case 0x1F631: return "E757";
+            case 0x1F632: return "E6F4";
+            case 0x1F633: return "E72A";
+            case 0x1F635: return "E6F4";
+            case 0x1F638: return "E753";
+            case 0x1F639: return "E72A";
+            case 0x1F63A: return "E6F0";
+            case 0x1F63B: return "E726";
+            case 0x1F63C: return "E753";
+            case 0x1F63D: return "E726";
+            case 0x1F63E: return "E724";
+            case 0x1F63F: return "E72E";
+            case 0x1F640: return "E6F3";
+            case 0x1F645: return "E72F";
+            case 0x1F646: return "E70B";
+            case 0x1F64D: return "E6F3";
+            case 0x1F64E: return "E6F1";
+            case 0x1F683: return "E65B";
+            case 0x1F684: return "E65D";
+            case 0x1F685: return "E65D";
+            case 0x1F687: return "E65C";
+            case 0x1F68C: return "E660";
+            case 0x1F695: return "E65E";
+            case 0x1F697: return "E65E";
+            case 0x1F699: return "E65F";
+            case 0x1F6A2: return "E661";
+            case 0x1F6A4: return "E6A3";
+            case 0x1F6A5: return "E66D";
+            case 0x1F6A9: return "E6DE";
+            case 0x1F6AA: return "E714";
+            case 0x1F6AB: return "E738";
+            case 0x1F6AC: return "E67F";
+            case 0x1F6AD: return "E680";
+            case 0x1F6B2: return "E71D";
+            case 0x1F6B6: return "E733";
+            case 0x1F6BB: return "E66E";
+            case 0x1F6BD: return "E66E";
+            case 0x1F6BE: return "E66E";
+            case 0x1F6C0: return "E6F7";
+
             default: return null;
         }
     }
 
+    /*
+     * Google Code 0xFE000-0xFEE4A
+     * KDDI: E468-E5DF,EA80-EB8E
+     */
     private static String getEmojiForCodePointKDDI(int codePoint) {
 
         switch (codePoint) {
@@ -1334,6 +1745,10 @@ public class EmojiHelper {
         }
     }
 
+    /*
+     * Google Code 0xFE000-0xFEE7D
+     * SoftBnk: E001-E05A,E101-E15A,E201-E25A,E301-E34D,E401-E44C,E501-E53E
+     */
     private static String getEmojiForCodePointSoftBank(int codePoint) {
 
         switch (codePoint) {
