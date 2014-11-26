@@ -89,7 +89,7 @@ public class EmojiHelper {
 
     public static Carrier getEmojiCarrierFromAddress(String address) {
         if (address == null)
-            return null;
+            return Carrier.OTHER;
         if (isInDomain(address, "docomo.ne.jp") || isInDomain(address, "dwmail.jp") ||
                 isInDomain(address, "pdx.ne.jp") || isInDomain(address, "willcom.com") ||
                 isInDomain(address, "emnet.ne.jp") || isInDomain(address, "emobile.ne.jp"))
@@ -99,7 +99,7 @@ public class EmojiHelper {
             return Carrier.SOFTBANK;
         else if (isInDomain(address, "ezweb.ne.jp") || isInDomain(address, "ido.ne.jp"))
             return Carrier.KDDI;
-        return null;
+        return Carrier.OTHER;
     }
 
     private static boolean isInDomain(String address, String domain) {
