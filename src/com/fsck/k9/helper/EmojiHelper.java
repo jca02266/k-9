@@ -150,8 +150,9 @@ public class EmojiHelper {
         }
 
         StringBuilder buff = new StringBuilder(html.length() + 512);
-        for (int i = 0; i < html.length(); i = html.offsetByCodePoints(i, 1)) {
-            int codePoint = html.codePointAt(i);
+
+        for (int i = 0, codePoint, len = html.length(); i < len; i += Character.charCount(codePoint)) {
+            codePoint = html.codePointAt(i);
 
             String emoji = getEmojiCodePoint(carrier, codePoint);
 
