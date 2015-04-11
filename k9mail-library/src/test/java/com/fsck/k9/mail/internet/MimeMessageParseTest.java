@@ -62,13 +62,13 @@ public class MimeMessageParseTest {
                         "Content-type: text/plain; encoding=ISO-8859-1\r\n" +
                         "Content-Transfer-Encoding: 8bit\r\n" +
                         "\r\n" +
-                        "gefährliche Umlaute"));
+                        "gef\u00e4hrliche Umlaute"));
 
         checkAddresses(msg.getFrom(), "adam@example.org");
         checkAddresses(msg.getRecipients(RecipientType.TO), "eva@example.org");
         assertEquals("Testmail", msg.getSubject());
         assertEquals("text/plain; encoding=ISO-8859-1", msg.getContentType());
-        assertEquals("gefährliche Umlaute", streamToString(MimeUtility.decodeBody(msg.getBody())));
+        assertEquals("gef\u00e4hrliche Umlaute", streamToString(MimeUtility.decodeBody(msg.getBody())));
     }
 
     @Test
