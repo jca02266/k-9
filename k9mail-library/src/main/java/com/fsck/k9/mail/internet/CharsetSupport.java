@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import static com.fsck.k9.mail.K9MailLib.LOG_TAG;
 import static com.fsck.k9.mail.internet.JisSupport.SHIFT_JIS;
@@ -22,14 +24,14 @@ public class CharsetSupport {
      *
      * Table format: unsupported charset (regular expression), fall-back charset
      */
-    private static final String[][] CHARSET_FALLBACK_MAP = new String[][] {
-            // Some Android versions don't support KOI8-U
-            {"koi8-u", "koi8-r"},
-            {"iso-2022-jp-[\\d]+", "iso-2022-jp"},
-            // Default fall-back is US-ASCII
-            {".*", "US-ASCII"}
-    };
-
+    static Map<String, String> CHARSET_FALLBACK_MAP = new HashMap<String, String>() { {
+        // Some Android versions don't support KOI8-U
+        put("koi8-u", "koi8-r");
+        put("iso-2022-jp-1", "iso-2022-jp");
+        put("iso-2022-jp-2", "iso-2022-jp");
+        put("iso-2022-jp-3", "iso-2022-jp");
+        put("iso-2022-jp-2004", "iso-2022-jp");
+    } };
 
     public static void setCharset(String charset, Part part) throws MessagingException {
         part.setHeader(MimeHeader.HEADER_CONTENT_TYPE,
@@ -103,23 +105,11 @@ public class CharsetSupport {
         try {
             supported = Charset.isSupported(charset);
         } catch (IllegalCharsetNameException e) {
-            supported = false;
-        }
-
-        for (String[] rule: CHARSET_FALLBACK_MAP) {
-            if (supported) {
-                break;
+            if (CHARSET_FALLBACK_MAP.containsKey(charset)) {
+                charset = CHARSET_FALLBACK_MAP.get(charset);
             }
-
-            if (charset.matches(rule[0])) {
-                Log.e(LOG_TAG, "I don't know how to deal with the charset " + charset +
-                        ". Falling back to " + rule[1]);
-                charset = rule[1];
-                try {
-                    supported = Charset.isSupported(charset);
-                } catch (IllegalCharsetNameException e) {
-                    supported = false;
-                }
+            else {
+                charset = "us-ascii";
             }
         }
 
