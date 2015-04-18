@@ -64,32 +64,35 @@ public class CharsetSupport {
         if (charset.equals("cp932"))
             charset = SHIFT_JIS;
 
-        if (variant != null && (charset.equals(SHIFT_JIS) || charset.equals("iso-2022-jp"))) {
-            charset = "x-" + variant + "-" + charset + "-2007";
-        }
         return charset;
     }
-
 
     static String readToString(InputStream in, String charset, String variant) throws IOException {
         boolean isIphoneString = false;
 
         charset = fixupCharset(charset, variant);
-        // iso-2022-jp variants are supported by no versions as of Dec 2010.
-        if (charset.length() > 19 && charset.startsWith("x-") &&
-                charset.endsWith("-iso-2022-jp-2007") && !Charset.isSupported(charset)) {
-            in = new Iso2022JpToShiftJisInputStream(in);
-            charset = "x-" + charset.substring(2, charset.length() - 17) + "-shift_jis-2007";
-        }
 
-        // shift_jis variants are supported by Eclair and later.
-        if (JisSupport.isShiftJis(charset) && !Charset.isSupported(charset)) {
-            // If the JIS variant is iPhone, map the Unicode private use area in iPhone to the one in Android after
-            // converting the character set from the standard Shift JIS to Unicode.
-            if (charset.substring(2, charset.length() - 15).equals("iphone"))
-                isIphoneString = true;
+        if (variant != null) {
+            if (charset.equals("iso-2022-jp")) {
+                in = new Iso2022JpToShiftJisInputStream(in);
+                charset = SHIFT_JIS;
+            }
 
-            charset = SHIFT_JIS;
+            // iso-2022-jp variants are supported by no versions as of Dec 2010.
+            if (charset.equals(SHIFT_JIS)) {
+                // If the JIS variant is iPhone, map the Unicode private use area in iPhone to the one in Android after
+                // converting the character set from the standard Shift JIS to Unicode.
+                if (variant.equals("iphone")) {
+                    isIphoneString = true;
+                } else {
+                    charset = "x-" + variant + "-shift_jis-2007";
+
+                    // shift_jis variants are supported by Eclair and later.
+                    if (!Charset.isSupported(charset)) {
+                        charset = SHIFT_JIS;
+                    }
+                }
+            }
         }
 
         /*
