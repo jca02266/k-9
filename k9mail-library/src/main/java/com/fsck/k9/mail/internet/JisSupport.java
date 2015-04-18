@@ -8,7 +8,7 @@ import com.fsck.k9.mail.Part;
 class JisSupport {
     public static final String SHIFT_JIS = "shift_jis";
 
-    public static String getJisVariantFromMessage(Message message) throws MessagingException {
+    public static String getJisVariantFromMessage(Message message) {
         if (message == null)
             return null;
 
@@ -48,8 +48,13 @@ class JisSupport {
     }
 
 
-    private static String getJisVariantFromMailerHeaders(Message message) throws MessagingException {
-        String[] mailerHeaders = message.getHeader("X-Mailer");
+    private static String getJisVariantFromMailerHeaders(Message message) {
+        String[] mailerHeaders;
+        try {
+            mailerHeaders = message.getHeader("X-Mailer");
+        } catch (MessagingException e) {
+            return null;
+        }
         if (mailerHeaders.length == 0)
             return null;
 
@@ -60,8 +65,13 @@ class JisSupport {
     }
 
 
-    private static String getJisVariantFromReceivedHeaders(Part message) throws MessagingException {
-        String[] receivedHeaders = message.getHeader("Received");
+    private static String getJisVariantFromReceivedHeaders(Part message) {
+        String[] receivedHeaders;
+        try {
+            receivedHeaders = message.getHeader("Received");
+        } catch (MessagingException e) {
+            return null;
+        }
         if (receivedHeaders.length == 0)
             return null;
 
@@ -81,7 +91,7 @@ class JisSupport {
         return null;
     }
 
-    private static String getJisVariantFromFromHeaders(Message message) throws MessagingException {
+    private static String getJisVariantFromFromHeaders(Message message) {
         Address addresses[] = message.getFrom();
         if (addresses == null || addresses.length == 0)
             return null;

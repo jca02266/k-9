@@ -57,7 +57,7 @@ public class CharsetSupport {
         }
     }
 
-    static String fixupCharset(String charset, Message message) throws MessagingException {
+    static String fixupCharset(String charset, Message message) {
         if (charset == null || "0".equals(charset))
             charset = "US-ASCII";  // No encoding, so use us-ascii, which is the standard.
 
