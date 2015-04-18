@@ -19,7 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.fsck.k9.mail.K9MailLib.LOG_TAG;
-import static com.fsck.k9.mail.internet.CharsetSupport.fixupCharset;
 import static com.fsck.k9.mail.internet.MimeUtility.getHeaderParameter;
 import static com.fsck.k9.mail.internet.MimeUtility.isSameMimeType;
 import static com.fsck.k9.mail.internet.Viewable.Alternative;
@@ -69,8 +68,6 @@ public class MessageExtractor {
                             } catch (IOException e) { /* ignore */ }
                         }
                     }
-                    String variant = JisSupport.getJisVariantFromMessage(getMessageFromPart(part));
-                    charset = fixupCharset(charset, variant);
 
                     /*
                      * Now we read the part into a buffer for further processing. Because
@@ -78,7 +75,8 @@ public class MessageExtractor {
                      */
                     InputStream in = MimeUtility.decodeBody(body);
                     try {
-                        return CharsetSupport.readToString(in, charset);
+                        String variant = JisSupport.getJisVariantFromMessage(getMessageFromPart(part));
+                        return CharsetSupport.readToString(in, charset, variant);
                     } finally {
                         try {
                             MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);

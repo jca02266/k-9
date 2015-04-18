@@ -71,9 +71,10 @@ public class CharsetSupport {
     }
 
 
-    static String readToString(InputStream in, String charset) throws IOException {
+    static String readToString(InputStream in, String charset, String variant) throws IOException {
         boolean isIphoneString = false;
 
+        charset = fixupCharset(charset, variant);
         // iso-2022-jp variants are supported by no versions as of Dec 2010.
         if (charset.length() > 19 && charset.startsWith("x-") &&
                 charset.endsWith("-iso-2022-jp-2007") && !Charset.isSupported(charset)) {
