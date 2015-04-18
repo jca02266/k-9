@@ -84,10 +84,10 @@ class DecoderUtil {
      * ANDROID:  COPIED FROM A NEWER VERSION OF MIME4J
      *
      * @param body the string to decode.
-     * @param message the message which has the string.
+     * @param variant variant of shift_jis charset
      * @return the decoded string.
      */
-    public static String decodeEncodedWords(String body, Message message) {
+    public static String decodeEncodedWords(String body, String variant) {
 
         // ANDROID:  Most strings will not include "=?" so a quick test can prevent unneeded
         // object creation.  This could also be handled via lazy creation of the StringBuilder.
@@ -131,7 +131,7 @@ class DecoderUtil {
 
             String sep = body.substring(previousEnd, begin);
 
-            String decoded = decodeEncodedWord(body, begin, end, message);
+            String decoded = decodeEncodedWord(body, begin, end, variant);
             if (decoded == null) {
                 sb.append(sep);
                 sb.append(body.substring(begin, end));
@@ -148,7 +148,7 @@ class DecoderUtil {
     }
 
     // return null on error
-    private static String decodeEncodedWord(String body, int begin, int end, Message message) {
+    private static String decodeEncodedWord(String body, int begin, int end, String variant) {
         int qm1 = body.indexOf('?', begin + 2);
         if (qm1 == end - 2)
             return null;
@@ -161,7 +161,7 @@ class DecoderUtil {
         String encoding = body.substring(qm1 + 1, qm2);
         String encodedText = body.substring(qm2 + 1, end - 2);
 
-        String charset = CharsetSupport.fixupCharset(mimeCharset, message);
+        String charset = CharsetSupport.fixupCharset(mimeCharset, variant);
 
         if (encodedText.isEmpty()) {
             Log.w(LOG_TAG, "Missing encoded text in encoded word: '" + body.substring(begin, end) + "'");

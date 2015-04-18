@@ -2,7 +2,6 @@ package com.fsck.k9.mail.internet;
 
 import android.util.Log;
 
-import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.Part;
 
@@ -57,7 +56,7 @@ public class CharsetSupport {
         }
     }
 
-    static String fixupCharset(String charset, Message message) {
+    static String fixupCharset(String charset, String variant) {
         if (charset == null || "0".equals(charset))
             charset = "US-ASCII";  // No encoding, so use us-ascii, which is the standard.
 
@@ -65,10 +64,8 @@ public class CharsetSupport {
         if (charset.equals("cp932"))
             charset = SHIFT_JIS;
 
-        if (charset.equals(SHIFT_JIS) || charset.equals("iso-2022-jp")) {
-            String variant = JisSupport.getJisVariantFromMessage(message);
-            if (variant != null)
-                charset = "x-" + variant + "-" + charset + "-2007";
+        if (variant != null && (charset.equals(SHIFT_JIS) || charset.equals("iso-2022-jp"))) {
+            charset = "x-" + variant + "-" + charset + "-2007";
         }
         return charset;
     }

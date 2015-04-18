@@ -69,7 +69,8 @@ public class MessageExtractor {
                             } catch (IOException e) { /* ignore */ }
                         }
                     }
-                    charset = fixupCharset(charset, getMessageFromPart(part));
+                    String variant = JisSupport.getJisVariantFromMessage(getMessageFromPart(part));
+                    charset = fixupCharset(charset, variant);
 
                     /*
                      * Now we read the part into a buffer for further processing. Because
