@@ -31,12 +31,12 @@ class DecoderUtil {
      * @param charset the Java charset to use.
      * @return the decoded string.
      */
-    private static String decodeB(String encodedWord, String charset) {
+    private static String decodeB(String encodedWord, String charset, String variant) {
         byte[] bytes = encodedWord.getBytes(Charset.forName("US-ASCII"));
 
         Base64InputStream is = new Base64InputStream(new ByteArrayInputStream(bytes));
         try {
-            return CharsetSupport.readToString(is, charset);
+            return CharsetSupport.readToString(is, charset, variant);
         } catch (IOException e) {
             return null;
         }
@@ -50,7 +50,7 @@ class DecoderUtil {
      * @param charset the Java charset to use.
      * @return the decoded string.
      */
-    private static String decodeQ(String encodedWord, String charset) {
+    private static String decodeQ(String encodedWord, String charset, String variant) {
 
         /*
          * Replace _ with =20
@@ -69,7 +69,7 @@ class DecoderUtil {
 
         QuotedPrintableInputStream is = new QuotedPrintableInputStream(new ByteArrayInputStream(bytes));
         try {
-            return CharsetSupport.readToString(is, charset);
+            return CharsetSupport.readToString(is, charset, variant);
         } catch (IOException e) {
             return null;
         }
@@ -161,17 +161,15 @@ class DecoderUtil {
         String encoding = body.substring(qm1 + 1, qm2);
         String encodedText = body.substring(qm2 + 1, end - 2);
 
-        String charset = CharsetSupport.fixupCharset(mimeCharset, variant);
-
         if (encodedText.isEmpty()) {
             Log.w(LOG_TAG, "Missing encoded text in encoded word: '" + body.substring(begin, end) + "'");
             return null;
         }
 
         if (encoding.equalsIgnoreCase("Q")) {
-            return decodeQ(encodedText, charset);
+            return decodeQ(encodedText, mimeCharset, variant);
         } else if (encoding.equalsIgnoreCase("B")) {
-            return DecoderUtil.decodeB(encodedText, charset);
+            return DecoderUtil.decodeB(encodedText, mimeCharset, variant);
         } else {
             Log.w(LOG_TAG, "Warning: Unknown encoding in encoded word '" + body.substring(begin, end) + "'");
             return null;
