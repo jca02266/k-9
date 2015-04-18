@@ -16,99 +16,99 @@ public class DecoderUtilTest {
     @Test
     public void testDecodeEncodedWords() {
         String body, expect;
-        MimeMessage message;
+        String variant;
 
         body = "abc";
         expect = "abc";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?us-ascii?q?abc?=";
         expect = "abc";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?";
         expect = "=?";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=??";
         expect = "=??";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=???";
         expect = "=???";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=????";
         expect = "=????";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=????=";
         expect = "=????=";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=??q??=";
         expect = "=??q??=";
         ;
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=??q?a?=";
         expect = "a";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=??=";
         expect = "=??=";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?x?=";
         expect = "=?x?=";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?x??=";
         expect = "=?x??=";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?x?q?=";
         expect = "=?x?q?=";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?x?q??=";
         expect = "=?x?q??=";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?x?q?X?=";
         expect = "X";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         // invalid base64 string
         body = "=?us-ascii?b?abc?=";
         expect = "";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         // broken encoded header
         body = "=?us-ascii?q?abc?= =?";
         expect = "abc =?";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
 
         body = "=?x?= =?";
         expect = "=?x?= =?";
-        message = null;
-        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, message));
+        variant = null;
+        assertEquals(expect, DecoderUtil.decodeEncodedWords(body, variant));
     }
 }

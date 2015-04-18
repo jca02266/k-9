@@ -892,11 +892,11 @@ public class MimeUtility {
         return s.replaceAll("\r|\n", "");
     }
 
-    private static String decode(String s, Message message) {
+    private static String decode(String s, String variant) {
         if (s == null) {
             return null;
         } else {
-            return DecoderUtil.decodeEncodedWords(s, message);
+            return DecoderUtil.decodeEncodedWords(s, variant);
         }
     }
 
@@ -904,8 +904,8 @@ public class MimeUtility {
         return unfoldAndDecode(s, null);
     }
 
-    public static String unfoldAndDecode(String s, Message message) {
-        return decode(unfold(s), message);
+    public static String unfoldAndDecode(String s, String variant) {
+        return decode(unfold(s), variant);
     }
 
     // TODO implement proper foldAndEncode
