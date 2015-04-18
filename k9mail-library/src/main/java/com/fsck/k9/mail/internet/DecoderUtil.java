@@ -161,12 +161,7 @@ class DecoderUtil {
         String encoding = body.substring(qm1 + 1, qm2);
         String encodedText = body.substring(qm2 + 1, end - 2);
 
-        String charset;
-        try {
-            charset = CharsetSupport.fixupCharset(mimeCharset, message);
-        } catch (MessagingException e) {
-            return null;
-        }
+        String charset = CharsetSupport.fixupCharset(mimeCharset, message);
 
         if (encodedText.isEmpty()) {
             Log.w(LOG_TAG, "Missing encoded text in encoded word: '" + body.substring(begin, end) + "'");
