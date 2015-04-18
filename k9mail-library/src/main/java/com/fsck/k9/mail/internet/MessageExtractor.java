@@ -20,7 +20,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.fsck.k9.mail.K9MailLib.LOG_TAG;
-import static com.fsck.k9.mail.internet.CharsetSupport.fixupCharset;
 import static com.fsck.k9.mail.internet.MimeUtility.getHeaderParameter;
 import static com.fsck.k9.mail.internet.MimeUtility.isSameMimeType;
 import static com.fsck.k9.mail.internet.Viewable.Alternative;
@@ -93,8 +92,6 @@ public class MessageExtractor {
                 } catch (IOException e) { /* ignore */ }
             }
         }
-        String variant = JisSupport.getJisVariantFromMessage(getMessageFromPart(part));
-        charset = fixupCharset(charset, variant);
         /*
          * Now we read the part into a buffer for further processing. Because
          * the stream is now wrapped we'll remove any transfer encoding at this point.
@@ -103,7 +100,8 @@ public class MessageExtractor {
         InputStream possiblyLimitedIn =
                 textSizeLimit != NO_TEXT_SIZE_LIMIT ? new BoundedInputStream(in, textSizeLimit) : in;
         try {
-            return CharsetSupport.readToString(possiblyLimitedIn, charset);
+            String variant = JisSupport.getJisVariantFromMessage(getMessageFromPart(part));
+            return CharsetSupport.readToString(possiblyLimitedIn, charset, variant);
         } finally {
             try {
                 MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);
