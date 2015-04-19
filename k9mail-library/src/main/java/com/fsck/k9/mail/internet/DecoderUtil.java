@@ -31,12 +31,12 @@ class DecoderUtil {
      * @param charset the Java charset to use.
      * @return the decoded string.
      */
-    private static String decodeB(String encodedWord, String charset, String variant) {
+    private static String decodeB(String encodedWord, String charset, CharsetSupport charsetSupport) {
         byte[] bytes = encodedWord.getBytes(Charset.forName("US-ASCII"));
 
         Base64InputStream is = new Base64InputStream(new ByteArrayInputStream(bytes));
         try {
-            return CharsetSupport.readToString(is, charset, variant);
+            return charsetSupport.readToString(is, charset);
         } catch (IOException e) {
             return null;
         }
@@ -50,7 +50,7 @@ class DecoderUtil {
      * @param charset the Java charset to use.
      * @return the decoded string.
      */
-    private static String decodeQ(String encodedWord, String charset, String variant) {
+    private static String decodeQ(String encodedWord, String charset, CharsetSupport charsetSupport) {
 
         /*
          * Replace _ with =20
@@ -69,7 +69,7 @@ class DecoderUtil {
 
         QuotedPrintableInputStream is = new QuotedPrintableInputStream(new ByteArrayInputStream(bytes));
         try {
-            return CharsetSupport.readToString(is, charset, variant);
+            return charsetSupport.readToString(is, charset);
         } catch (IOException e) {
             return null;
         }
@@ -84,10 +84,10 @@ class DecoderUtil {
      * ANDROID:  COPIED FROM A NEWER VERSION OF MIME4J
      *
      * @param body the string to decode.
-     * @param variant variant of shift_jis charset
+     * @param charsetSupport charset converter
      * @return the decoded string.
      */
-    public static String decodeEncodedWords(String body, String variant) {
+    public static String decodeEncodedWords(String body, CharsetSupport charsetSupport) {
 
         // ANDROID:  Most strings will not include "=?" so a quick test can prevent unneeded
         // object creation.  This could also be handled via lazy creation of the StringBuilder.
@@ -131,7 +131,7 @@ class DecoderUtil {
 
             String sep = body.substring(previousEnd, begin);
 
-            String decoded = decodeEncodedWord(body, begin, end, variant);
+            String decoded = decodeEncodedWord(body, begin, end, charsetSupport);
             if (decoded == null) {
                 sb.append(sep);
                 sb.append(body.substring(begin, end));
@@ -148,7 +148,7 @@ class DecoderUtil {
     }
 
     // return null on error
-    private static String decodeEncodedWord(String body, int begin, int end, String variant) {
+    private static String decodeEncodedWord(String body, int begin, int end, CharsetSupport charsetSupport) {
         int qm1 = body.indexOf('?', begin + 2);
         if (qm1 == end - 2)
             return null;
@@ -167,9 +167,9 @@ class DecoderUtil {
         }
 
         if (encoding.equalsIgnoreCase("Q")) {
-            return decodeQ(encodedText, mimeCharset, variant);
+            return decodeQ(encodedText, mimeCharset, charsetSupport);
         } else if (encoding.equalsIgnoreCase("B")) {
-            return DecoderUtil.decodeB(encodedText, mimeCharset, variant);
+            return DecoderUtil.decodeB(encodedText, mimeCharset, charsetSupport);
         } else {
             Log.w(LOG_TAG, "Warning: Unknown encoding in encoded word '" + body.substring(begin, end) + "'");
             return null;

@@ -75,8 +75,7 @@ public class MessageExtractor {
                      */
                     InputStream in = MimeUtility.decodeBody(body);
                     try {
-                        String variant = JisSupport.getJisVariantFromMessage(getMessageFromPart(part));
-                        return CharsetSupport.readToString(in, charset, variant);
+                        return new CharsetSupport(getMessageFromPart(part)).readToString(in, charset);
                     } finally {
                         try {
                             MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);
