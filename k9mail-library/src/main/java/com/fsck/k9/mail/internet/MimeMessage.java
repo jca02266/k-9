@@ -254,8 +254,7 @@ public class MimeMessage extends Message {
      */
     @Override
     public String getSubject() {
-        String variant = JisSupport.getJisVariantFromMessage(this);
-        return MimeUtility.unfoldAndDecode(getFirstHeader("Subject"), variant);
+        return MimeUtility.unfoldAndDecode(getFirstHeader("Subject"), new CharsetSupport(this));
     }
 
     @Override

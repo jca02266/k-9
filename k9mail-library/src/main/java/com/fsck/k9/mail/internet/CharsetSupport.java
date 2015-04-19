@@ -2,6 +2,7 @@ package com.fsck.k9.mail.internet;
 
 import android.util.Log;
 
+import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.Part;
 
@@ -15,10 +16,19 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import static com.fsck.k9.mail.K9MailLib.LOG_TAG;
 import static com.fsck.k9.mail.internet.JisSupport.SHIFT_JIS;
 
 public class CharsetSupport {
+    String variant;
+    public CharsetSupport(Message message) {
+        if (message != null) {
+            this.variant = JisSupport.getJisVariantFromMessage(message);
+        }
+        else {
+            this.variant = null;
+        }
+    }
+
     /**
      * Table for character set fall-back.
      *
@@ -39,13 +49,7 @@ public class CharsetSupport {
                 part.getMimeType() + ";\r\n charset=" + getExternalCharset(charset));
     }
 
-    static boolean TestingIsSupported = false;
-    static boolean isSupported(String charset) {
-        if (TestingIsSupported) {
-            // always return false for testing.
-            return false;
-        }
-
+    boolean isSupported(String charset) {
         try {
             return Charset.isSupported(charset);
         } catch (IllegalCharsetNameException e) {
@@ -53,11 +57,11 @@ public class CharsetSupport {
         }
     }
 
-    public static String getCharsetFromAddress(String address) {
+    public String getCharsetFromAddress(String address) {
         String variant = JisSupport.getJisVariantFromAddress(address);
         if (variant != null) {
             String charset = "x-" + variant + "-shift_jis-2007";
-            if (CharsetSupport.isSupported(charset))
+            if (isSupported(charset))
                 return charset;
         }
 
@@ -72,7 +76,7 @@ public class CharsetSupport {
         }
     }
 
-    static String fixupCharset(String charset) {
+    String fixupCharset(String charset) {
         if (charset == null || "0".equals(charset))
             return "us-ascii";  // No encoding, so use us-ascii, which is the standard.
 
@@ -82,7 +86,7 @@ public class CharsetSupport {
          * See if there is conversion from the MIME charset to the Java one.
          * this function may also throw an exception if the charset name is not known
          */
-        if (CharsetSupport.isSupported(charset)) {
+        if (isSupported(charset)) {
             return charset;
         }
 
@@ -93,7 +97,7 @@ public class CharsetSupport {
         return "us-ascii";
     }
 
-    static String readToString(InputStream in, String charset, String variant) throws IOException {
+    String readToString(InputStream in, String charset) throws IOException {
         boolean isIphoneString = false;
 
         charset = fixupCharset(charset);
@@ -115,7 +119,7 @@ public class CharsetSupport {
                     charset = "x-" + variant + "-shift_jis-2007";
 
                     // shift_jis variants are supported by Eclair and later.
-                    if (!CharsetSupport.isSupported(charset)) {
+                    if (!isSupported(charset)) {
                         charset = SHIFT_JIS;
                     }
                 }

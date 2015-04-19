@@ -100,8 +100,7 @@ public class MessageExtractor {
         InputStream possiblyLimitedIn =
                 textSizeLimit != NO_TEXT_SIZE_LIMIT ? new BoundedInputStream(in, textSizeLimit) : in;
         try {
-            String variant = JisSupport.getJisVariantFromMessage(getMessageFromPart(part));
-            return CharsetSupport.readToString(possiblyLimitedIn, charset, variant);
+            return new CharsetSupport(getMessageFromPart(part)).readToString(in, charset);
         } finally {
             try {
                 MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);
