@@ -27,6 +27,7 @@ public class CharsetSupport {
     static Map<String, String> CHARSET_FALLBACK_MAP = new HashMap<String, String>() { {
         // Some Android versions don't support KOI8-U
         put("koi8-u", "koi8-r");
+        put("cp932", "shift_jis");
         put("iso-2022-jp-1", "iso-2022-jp");
         put("iso-2022-jp-2", "iso-2022-jp");
         put("iso-2022-jp-3", "iso-2022-jp");
@@ -67,13 +68,23 @@ public class CharsetSupport {
 
     static String fixupCharset(String charset, String variant) {
         if (charset == null || "0".equals(charset))
-            charset = "US-ASCII";  // No encoding, so use us-ascii, which is the standard.
+            return "us-ascii";  // No encoding, so use us-ascii, which is the standard.
 
         charset = charset.toLowerCase(Locale.US);
-        if (charset.equals("cp932"))
-            charset = SHIFT_JIS;
 
-        return charset;
+        /*
+         * See if there is conversion from the MIME charset to the Java one.
+         * this function may also throw an exception if the charset name is not known
+         */
+        if (CharsetSupport.isSupported(charset)) {
+            return charset;
+        }
+
+        if (CHARSET_FALLBACK_MAP.containsKey(charset)) {
+            return CHARSET_FALLBACK_MAP.get(charset);
+        }
+
+        return "us-ascii";
     }
 
     static String readToString(InputStream in, String charset, String variant) throws IOException {
@@ -81,14 +92,15 @@ public class CharsetSupport {
 
         charset = fixupCharset(charset, variant);
 
+        // change charset for Emoji code
         if (variant != null) {
-            if (charset.equals("iso-2022-jp")) {
+            if (charset.startsWith("iso-2022-jp")) {
                 in = new Iso2022JpToShiftJisInputStream(in);
                 charset = SHIFT_JIS;
             }
 
             // iso-2022-jp variants are supported by no versions as of Dec 2010.
-            if (charset.equals(SHIFT_JIS)) {
+            if (charset.equals(SHIFT_JIS) || charset.equals("cp932")) {
                 // If the JIS variant is iPhone, map the Unicode private use area in iPhone to the one in Android after
                 // converting the character set from the standard Shift JIS to Unicode.
                 if (variant.equals("iphone")) {
@@ -101,19 +113,6 @@ public class CharsetSupport {
                         charset = SHIFT_JIS;
                     }
                 }
-            }
-        }
-
-        /*
-         * See if there is conversion from the MIME charset to the Java one.
-         * this function may also throw an exception if the charset name is not known
-         */
-        if (!CharsetSupport.isSupported(charset)) {
-            if (CHARSET_FALLBACK_MAP.containsKey(charset)) {
-                charset = CHARSET_FALLBACK_MAP.get(charset);
-            }
-            else {
-                charset = "us-ascii";
             }
         }
 
