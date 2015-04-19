@@ -39,7 +39,13 @@ public class CharsetSupport {
                 part.getMimeType() + ";\r\n charset=" + getExternalCharset(charset));
     }
 
+    static boolean TestingIsSupported = false;
     static boolean isSupported(String charset) {
+        if (TestingIsSupported) {
+            // always return false for testing.
+            return false;
+        }
+
         try {
             return Charset.isSupported(charset);
         } catch (IllegalCharsetNameException e) {
@@ -66,7 +72,7 @@ public class CharsetSupport {
         }
     }
 
-    static String fixupCharset(String charset, String variant) {
+    static String fixupCharset(String charset) {
         if (charset == null || "0".equals(charset))
             return "us-ascii";  // No encoding, so use us-ascii, which is the standard.
 
@@ -90,7 +96,7 @@ public class CharsetSupport {
     static String readToString(InputStream in, String charset, String variant) throws IOException {
         boolean isIphoneString = false;
 
-        charset = fixupCharset(charset, variant);
+        charset = fixupCharset(charset);
 
         // change charset for Emoji code
         if (variant != null) {
