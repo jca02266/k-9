@@ -2,6 +2,7 @@ package com.fsck.k9.mail.internet;
 
 import android.util.Log;
 
+import com.fsck.k9.mail.Body;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.Part;
@@ -15,6 +16,8 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.fsck.k9.mail.internet.JisSupport.SHIFT_JIS;
 
@@ -29,6 +32,54 @@ public class CharsetSupport {
         }
     }
 
+    static String getCharsetFromMessage(Part part) {
+        /*
+         * We've got a text part, so let's see if it needs to be processed further.
+         */
+        String charset = MimeUtility.getHeaderParameter(part.getContentType(), "charset");
+        if (charset != null) {
+            return charset;
+        }
+
+        String mimeType = part.getMimeType();
+        if (mimeType == null) {
+            return null;
+        }
+
+        /*
+         * determine the charset from HTML message.
+         */
+        if (isSameMimeType(mimeType, "text/html")) {
+            try {
+                Body body = part.getBody();
+                InputStream in = MimeUtility.decodeBody(body);
+                try {
+                    byte[] buf = new byte[256];
+                    in.read(buf, 0, buf.length);
+                    String str = new String(buf, "US-ASCII");
+
+                    if (str.isEmpty()) {
+                        return "";
+                    }
+                    Pattern p = Pattern.compile("<meta http-equiv=\"?Content-Type\"? content=\"text/html; charset=(.+?)\">", Pattern.CASE_INSENSITIVE);
+                    Matcher m = p.matcher(str);
+                    if (m.find()) {
+                        charset = m.group(1);
+                    }
+                } finally {
+                    try {
+                        MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);
+                    } catch (IOException e) { /* ignore */ }
+                }
+            } catch (MessagingException e) {
+                /* Ignore */
+            } catch (IOException e) {
+                /* Ignore */
+            }
+        }
+
+        return charset;
+    }
     /**
      * Table for character set fall-back.
      *
