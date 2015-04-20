@@ -1,7 +1,5 @@
 package com.fsck.k9.mail.internet;
 
-import android.util.Log;
-
 import com.fsck.k9.mail.Body;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
@@ -22,6 +20,8 @@ import java.util.regex.Pattern;
 import static com.fsck.k9.mail.internet.JisSupport.SHIFT_JIS;
 
 public class CharsetSupport {
+    private static String DEFAULT_CHARSET_FOR_READING = "us-ascii";
+
     String variant;
     public CharsetSupport(Message message) {
         if (message != null) {
@@ -129,7 +129,7 @@ public class CharsetSupport {
 
     String fixupCharset(String charset) {
         if (charset == null || "0".equals(charset))
-            return "us-ascii";  // No encoding, so use us-ascii, which is the standard.
+            return DEFAULT_CHARSET_FOR_READING;  // No encoding, so use us-ascii, which is the standard.
 
         charset = charset.toLowerCase(Locale.US);
 
@@ -145,7 +145,7 @@ public class CharsetSupport {
             return CHARSET_FALLBACK_MAP.get(charset);
         }
 
-        return "us-ascii";
+        return DEFAULT_CHARSET_FOR_READING;
     }
 
     String readToString(InputStream in, String charset) throws IOException {
@@ -1173,4 +1173,36 @@ public class CharsetSupport {
         }
     }
 
+    static HashMap<String,String> defaultCharsetForK9Language;
+    static {
+        defaultCharsetForK9Language= new HashMap<String,String>();
+        defaultCharsetForK9Language.put("en", "us-ascii");
+        defaultCharsetForK9Language.put("ja", "iso-2022-jp");
+    }
+
+    static HashMap<Locale,String> defaultCharsetForLocale;
+    static {
+        defaultCharsetForLocale = new HashMap<Locale,String>();
+        defaultCharsetForLocale.put(Locale.ENGLISH, "us-ascii");
+        defaultCharsetForLocale.put(Locale.JAPAN,   "iso-2022-jp");
+    }
+
+    static String getDefaultCharset(String locale) {
+        String charset;
+
+        charset = defaultCharsetForK9Language.get(locale);
+        if (charset != null) {
+            return charset;
+        }
+
+        charset = defaultCharsetForLocale.get(Locale.getDefault());
+        if (charset != null) {
+            return charset;
+        }
+        return "us-ascii";
+    }
+
+    public static void setDefaultCharsetForReading(String locale) {
+        DEFAULT_CHARSET_FOR_READING = getDefaultCharset(locale);
+    }
 }

@@ -37,6 +37,7 @@ import com.fsck.k9.mail.K9MailLib;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.internet.BinaryTempFileBody;
+import com.fsck.k9.mail.internet.CharsetSupport;
 import com.fsck.k9.mailstore.LocalStore;
 import com.fsck.k9.provider.UnreadWidgetProvider;
 import com.fsck.k9.mail.ssl.LocalKeyStore;
@@ -767,6 +768,8 @@ public class K9 extends Application {
 
 
         K9.setK9Language(sprefs.getString("language", ""));
+
+        CharsetSupport.setDefaultCharsetForReading(K9.getK9Language());
 
         int themeValue = sprefs.getInt("theme", Theme.LIGHT.ordinal());
         // We used to save the resource ID of the theme. So convert that to the new format if
