@@ -47,6 +47,8 @@ public class MessageViewInfoExtractor {
             Message message, MessageCryptoAnnotations annotations) throws MessagingException {
         // TODO note that we will move away from ViewableContainers, so this method is subject to changes!
 
+        Address[] fromAddrs = message.getFrom();
+
         // 1. break mime structure on encryption/signature boundaries
         List<Part> parts = getCryptPieces(message, annotations);
 
@@ -65,7 +67,7 @@ public class MessageViewInfoExtractor {
             MessageExtractor.findViewablesAndAttachments(part, viewableParts, attachments);
 
             // 3. parse viewables into html string
-            ViewableExtractedText viewable = MessageViewInfoExtractor.extractTextFromViewables(context, viewableParts);
+            ViewableExtractedText viewable = MessageViewInfoExtractor.extractTextFromViewables(context, viewableParts, fromAddrs);
             List<AttachmentViewInfo> attachmentInfos = AttachmentInfoExtractor.extractAttachmentInfos(context, attachments);
 
             MessageViewContainer messageViewContainer =
@@ -129,7 +131,7 @@ public class MessageViewInfoExtractor {
      *          In case of an error.
      */
     @VisibleForTesting
-    static ViewableExtractedText extractTextFromViewables(Context context, List<Viewable> viewables)
+    static ViewableExtractedText extractTextFromViewables(Context context, List<Viewable> viewables, Address[] fromAddrs)
             throws MessagingException {
         try {
             // Collect all viewable parts
@@ -149,7 +151,7 @@ public class MessageViewInfoExtractor {
                     // This is either a text/plain or text/html part. Fill the variables 'text' and
                     // 'html', converting between plain text and HTML as necessary.
                     text.append(buildText(viewable, !hideDivider));
-                    html.append(buildHtml(viewable, !hideDivider));
+                    html.append(buildHtml(viewable, !hideDivider, fromAddrs));
                     hideDivider = false;
                 } else if (viewable instanceof MessageHeader) {
                     MessageHeader header = (MessageHeader) viewable;
@@ -187,7 +189,7 @@ public class MessageViewInfoExtractor {
                     // Fill the 'html' variable
                     divider = !hideDivider;
                     for (Viewable htmlViewable : htmlAlternative) {
-                        html.append(buildHtml(htmlViewable, divider));
+                        html.append(buildHtml(htmlViewable, divider, fromAddrs));
                         divider = true;
                     }
                     hideDivider = false;
@@ -216,7 +218,7 @@ public class MessageViewInfoExtractor {
      *
      * @return The contents of the supplied viewable instance as HTML.
      */
-    private static StringBuilder buildHtml(Viewable viewable, boolean prependDivider) {
+    private static StringBuilder buildHtml(Viewable viewable, boolean prependDivider, Address[] fromAddrs) {
         StringBuilder html = new StringBuilder();
         if (viewable instanceof Textual) {
             Part part = ((Textual)viewable).getPart();
@@ -227,6 +229,7 @@ public class MessageViewInfoExtractor {
                 t = "";
             } else if (viewable instanceof Text) {
                 t = HtmlConverter.textToHtml(t);
+                t = HtmlConverter.convertEmoji2Img(t, fromAddrs);
             }
             html.append(t);
         } else if (viewable instanceof Alternative) {
@@ -239,7 +242,7 @@ public class MessageViewInfoExtractor {
 
             boolean divider = prependDivider;
             for (Viewable htmlViewable : htmlAlternative) {
-                html.append(buildHtml(htmlViewable, divider));
+                html.append(buildHtml(htmlViewable, divider, fromAddrs));
                 divider = true;
             }
         }
