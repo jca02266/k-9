@@ -56,7 +56,7 @@ public class LocalMessageExtractor {
      *          In case of an error.
      */
     public static ViewableContainer extractTextAndAttachments(Context context, List<Viewable> viewables,
-            List<Part> attachments) throws MessagingException {
+            List<Part> attachments, Address[] fromAddrs) throws MessagingException {
         try {
 
             // Collect all viewable parts
@@ -76,7 +76,7 @@ public class LocalMessageExtractor {
                     // This is either a text/plain or text/html part. Fill the variables 'text' and
                     // 'html', converting between plain text and HTML as necessary.
                     text.append(buildText(viewable, !hideDivider));
-                    html.append(buildHtml(viewable, !hideDivider));
+                    html.append(buildHtml(viewable, !hideDivider, fromAddrs));
                     hideDivider = false;
                 } else if (viewable instanceof MessageHeader) {
                     MessageHeader header = (MessageHeader) viewable;
@@ -114,7 +114,7 @@ public class LocalMessageExtractor {
                     // Fill the 'html' variable
                     divider = !hideDivider;
                     for (Viewable htmlViewable : htmlAlternative) {
-                        html.append(buildHtml(htmlViewable, divider));
+                        html.append(buildHtml(htmlViewable, divider, fromAddrs));
                         divider = true;
                     }
                     hideDivider = false;
@@ -143,7 +143,7 @@ public class LocalMessageExtractor {
      *
      * @return The contents of the supplied viewable instance as HTML.
      */
-    private static StringBuilder buildHtml(Viewable viewable, boolean prependDivider)
+    private static StringBuilder buildHtml(Viewable viewable, boolean prependDivider, Address[] fromAddrs)
     {
         StringBuilder html = new StringBuilder();
         if (viewable instanceof Textual) {
@@ -155,6 +155,7 @@ public class LocalMessageExtractor {
                 t = "";
             } else if (viewable instanceof Text) {
                 t = HtmlConverter.textToHtml(t);
+                t = HtmlConverter.convertEmoji2Img(t, fromAddrs);
             }
             html.append(t);
         } else if (viewable instanceof Alternative) {
@@ -167,7 +168,7 @@ public class LocalMessageExtractor {
 
             boolean divider = prependDivider;
             for (Viewable htmlViewable : htmlAlternative) {
-                html.append(buildHtml(htmlViewable, divider));
+                html.append(buildHtml(htmlViewable, divider, fromAddrs));
                 divider = true;
             }
         }
@@ -440,7 +441,7 @@ public class LocalMessageExtractor {
 
             // 3. parse viewables into html string
             ViewableContainer viewable = LocalMessageExtractor.extractTextAndAttachments(context, viewables,
-                    attachments);
+                    attachments, message.getFrom());
             List<AttachmentViewInfo> attachmentInfos = extractAttachmentInfos(context, attachments);
 
             MessageViewContainer messageViewContainer =
