@@ -5,7 +5,7 @@ import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.Part;
 
-class JisSupport {
+public class JisSupport {
     public static final String SHIFT_JIS = "shift_jis";
 
     public static String getJisVariantFromMessage(Message message) throws MessagingException {
