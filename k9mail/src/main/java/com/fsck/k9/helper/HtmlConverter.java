@@ -4,6 +4,8 @@ import android.text.*;
 import android.text.Html.TagHandler;
 import com.fsck.k9.K9;
 
+import com.fsck.k9.mail.Address;
+import com.fsck.k9.mail.internet.JisSupport;
 import org.xml.sax.XMLReader;
 
 import java.util.Collections;
