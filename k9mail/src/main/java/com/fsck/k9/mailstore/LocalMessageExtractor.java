@@ -5,6 +5,7 @@ import android.net.Uri;
 
 import com.fsck.k9.R;
 import com.fsck.k9.crypto.DecryptedTempFileBody;
+import com.fsck.k9.helper.EmojiConverter;
 import com.fsck.k9.mail.Address;
 import com.fsck.k9.mail.Body;
 import com.fsck.k9.mail.BodyPart;
@@ -155,7 +156,7 @@ public class LocalMessageExtractor {
                 t = "";
             } else if (viewable instanceof Text) {
                 t = HtmlConverter.textToHtml(t);
-                t = HtmlConverter.convertEmoji2Img(t, fromAddrs);
+                t = EmojiConverter.convertEmoji2Img(t, fromAddrs);
             }
             html.append(t);
         } else if (viewable instanceof Alternative) {
