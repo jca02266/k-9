@@ -167,11 +167,15 @@ public class CharsetSupport {
                 if (variant.equals("iphone")) {
                     isIphoneString = true;
                 } else {
-                    charset = "x-" + variant + "-shift_jis-2007";
+                    charset = "x-" + variant + "-shift_jis-2012";
 
-                    // shift_jis variants are supported by Eclair and later.
+                    // shift_jis variants "x-*-shift_jis-2012" are supported by KitKat and later.
                     if (!isSupported(charset)) {
-                        charset = SHIFT_JIS;
+                        charset = "x-" + variant + "-shift_jis-2007";
+                        // shift_jis variants "x-*-shift_jis-2007" are supported by Eclair and later.
+                        if (!isSupported(charset)) {
+                            charset = SHIFT_JIS;
+                        }
                     }
                 }
             }
