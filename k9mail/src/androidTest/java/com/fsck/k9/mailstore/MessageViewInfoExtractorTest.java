@@ -49,7 +49,7 @@ public class MessageViewInfoExtractorTest {
         ArrayList<Viewable> outputViewableParts = new ArrayList<>();
         MessageExtractor.findViewablesAndAttachments(message, outputViewableParts, outputNonViewableParts);
         ViewableExtractedText container = extractTextFromViewables(InstrumentationRegistry.getTargetContext(),
-                outputViewableParts);
+                outputViewableParts, null);
 
         String expectedText = bodyText;
         String expectedHtml =
@@ -78,7 +78,7 @@ public class MessageViewInfoExtractorTest {
         ArrayList<Viewable> outputViewableParts = new ArrayList<>();
         MessageExtractor.findViewablesAndAttachments(message, outputViewableParts, attachments);
         ViewableExtractedText container = extractTextFromViewables(InstrumentationRegistry.getTargetContext(),
-                outputViewableParts);
+                outputViewableParts, null);
 
         String expectedText = "K-9 Mail rocks :>";
         String expectedHtml =
@@ -113,7 +113,7 @@ public class MessageViewInfoExtractorTest {
         ArrayList<Viewable> outputViewableParts = new ArrayList<>();
         MessageExtractor.findViewablesAndAttachments(message, outputViewableParts, outputNonViewableParts);
         ViewableExtractedText container = extractTextFromViewables(InstrumentationRegistry.getTargetContext(),
-                outputViewableParts);
+                outputViewableParts, null);
 
         String expectedText =
                 bodyText1 + "\r\n\r\n" +
@@ -174,7 +174,7 @@ public class MessageViewInfoExtractorTest {
         ArrayList<Viewable> outputViewableParts = new ArrayList<>();
         MessageExtractor.findViewablesAndAttachments(message, outputViewableParts, outputNonViewableParts);
         ViewableExtractedText container = extractTextFromViewables(InstrumentationRegistry.getTargetContext(),
-                outputViewableParts);
+                outputViewableParts, null);
 
         String expectedText =
                 bodyText +
