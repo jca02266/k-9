@@ -4,7 +4,6 @@ import com.fsck.k9.mail.Body;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.Part;
-
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -18,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.fsck.k9.mail.internet.JisSupport.SHIFT_JIS;
+import static com.fsck.k9.mail.internet.MimeUtility.isSameMimeType;
 
 public class CharsetSupport {
     private static String DEFAULT_CHARSET_FOR_READING = "us-ascii";
