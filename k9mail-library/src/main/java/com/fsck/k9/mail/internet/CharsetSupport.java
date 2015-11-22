@@ -112,7 +112,11 @@ public class CharsetSupport {
     public String getCharsetFromAddress(String address) {
         String variant = JisSupport.getJisVariantFromAddress(address);
         if (variant != null) {
-            String charset = "x-" + variant + "-shift_jis-2007";
+            String charset;
+            charset = "x-" + variant + "-shift_jis-2012";
+            if (isSupported(charset))
+                return charset;
+            charset = "x-" + variant + "-shift_jis-2007";
             if (isSupported(charset))
                 return charset;
         }
