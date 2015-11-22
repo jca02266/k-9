@@ -28,8 +28,17 @@ class JisSupport {
     }
 
     public static boolean isShiftJis(String charset) {
-        return charset.length() > 17 && charset.startsWith("x-")
-                && charset.endsWith("-shift_jis-2007");
+        if (charset.length() > "x--shift_jis-2012".length()
+                && charset.startsWith("x-")
+                && charset.endsWith("-shift_jis-2012")) {
+            return true;
+        }
+        if (charset.length() > "x--shift_jis-2007".length()
+                && charset.startsWith("x-")
+                && charset.endsWith("-shift_jis-2007")) {
+            return true;
+        }
+        return false;
     }
 
     public static String getJisVariantFromAddress(String address) {
