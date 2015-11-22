@@ -11,12 +11,13 @@ public class EmojiConverter {
      * We don't use String.codePointAt here for performance reasons.
      */
     private static boolean hasEmoji(String html) {
-        for (int i = 0; i < html.length(); ++i) {
-            char c = html.charAt(i);
-            if (c >= 0xDBB8 && c < 0xDBBC)
-                return true;
-        }
-        return false;
+        return true;
+//        for (int i = 0; i < html.length(); ++i) {
+//            char c = html.charAt(i);
+//            if (c >= 0xDBB8 && c < 0xDBBC)
+//                return true;
+//        }
+//        return false;
     }
 
     public static String convertEmoji2Img(String html, Address[] fromAddrs) {
