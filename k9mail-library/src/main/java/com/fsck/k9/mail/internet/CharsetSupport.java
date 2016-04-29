@@ -1,7 +1,6 @@
 package com.fsck.k9.mail.internet;
 
-import android.util.Log;
-
+import com.fsck.k9.mail.Body;
 import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.Part;
@@ -12,37 +11,113 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static com.fsck.k9.mail.K9MailLib.LOG_TAG;
 import static com.fsck.k9.mail.internet.JisSupport.SHIFT_JIS;
+import static com.fsck.k9.mail.internet.MimeUtility.isSameMimeType;
 
 public class CharsetSupport {
+    private static String DEFAULT_CHARSET_FOR_READING = "us-ascii";
+
+    String variant;
+    public CharsetSupport(Message message) {
+        if (message != null) {
+            this.variant = JisSupport.getJisVariantFromMessage(message);
+        }
+        else {
+            this.variant = null;
+        }
+    }
+
+    static String getCharsetFromMessage(Part part) {
+        /*
+         * We've got a text part, so let's see if it needs to be processed further.
+         */
+        String charset = MimeUtility.getHeaderParameter(part.getContentType(), "charset");
+        if (charset != null) {
+            return charset;
+        }
+
+        String mimeType = part.getMimeType();
+        if (mimeType == null) {
+            return null;
+        }
+
+        /*
+         * determine the charset from HTML message.
+         */
+        if (isSameMimeType(mimeType, "text/html")) {
+            try {
+                Body body = part.getBody();
+                InputStream in = MimeUtility.decodeBody(body);
+                try {
+                    byte[] buf = new byte[256];
+                    in.read(buf, 0, buf.length);
+                    String str = new String(buf, "US-ASCII");
+
+                    if (str.isEmpty()) {
+                        return "";
+                    }
+                    Pattern p = Pattern.compile("<meta http-equiv=\"?Content-Type\"? content=\"text/html; charset=(.+?)\">", Pattern.CASE_INSENSITIVE);
+                    Matcher m = p.matcher(str);
+                    if (m.find()) {
+                        charset = m.group(1);
+                    }
+                } finally {
+                    try {
+                        MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);
+                    } catch (IOException e) { /* ignore */ }
+                }
+            } catch (MessagingException e) {
+                /* Ignore */
+            } catch (IOException e) {
+                /* Ignore */
+            }
+        }
+
+        return charset;
+    }
     /**
      * Table for character set fall-back.
      *
      * Table format: unsupported charset (regular expression), fall-back charset
      */
-    private static final String[][] CHARSET_FALLBACK_MAP = new String[][] {
-            // Some Android versions don't support KOI8-U
-            {"koi8-u", "koi8-r"},
-            {"iso-2022-jp-[\\d]+", "iso-2022-jp"},
-            // Default fall-back is US-ASCII
-            {".*", "US-ASCII"}
-    };
-
+    static Map<String, String> CHARSET_FALLBACK_MAP = new HashMap<String, String>() { {
+        // Some Android versions don't support KOI8-U
+        put("koi8-u", "koi8-r");
+        put("cp932", "shift_jis");
+        put("iso-2022-jp-1", "iso-2022-jp");
+        put("iso-2022-jp-2", "iso-2022-jp");
+        put("iso-2022-jp-3", "iso-2022-jp");
+        put("iso-2022-jp-2004", "iso-2022-jp");
+    } };
 
     public static void setCharset(String charset, Part part) throws MessagingException {
         part.setHeader(MimeHeader.HEADER_CONTENT_TYPE,
                 part.getMimeType() + ";\r\n charset=" + getExternalCharset(charset));
     }
 
+    boolean isSupported(String charset) {
+        try {
+            return Charset.isSupported(charset);
+        } catch (IllegalCharsetNameException e) {
+            return false;
+        }
+    }
 
-    public static String getCharsetFromAddress(String address) {
+    public String getCharsetFromAddress(String address) {
         String variant = JisSupport.getJisVariantFromAddress(address);
         if (variant != null) {
-            String charset = "x-" + variant + "-shift_jis-2007";
-            if (Charset.isSupported(charset))
+            String charset;
+            charset = "x-" + variant + "-shift_jis-2012";
+            if (isSupported(charset))
+                return charset;
+            charset = "x-" + variant + "-shift_jis-2007";
+            if (isSupported(charset))
                 return charset;
         }
 
@@ -57,67 +132,56 @@ public class CharsetSupport {
         }
     }
 
-    static String fixupCharset(String charset, Message message) throws MessagingException {
+    String fixupCharset(String charset) {
         if (charset == null || "0".equals(charset))
-            charset = "US-ASCII";  // No encoding, so use us-ascii, which is the standard.
+            return DEFAULT_CHARSET_FOR_READING;  // No encoding, so use us-ascii, which is the standard.
 
         charset = charset.toLowerCase(Locale.US);
-        if (charset.equals("cp932"))
-            charset = SHIFT_JIS;
-
-        if (charset.equals(SHIFT_JIS) || charset.equals("iso-2022-jp")) {
-            String variant = JisSupport.getJisVariantFromMessage(message);
-            if (variant != null)
-                charset = "x-" + variant + "-" + charset + "-2007";
-        }
-        return charset;
-    }
-
-
-    static String readToString(InputStream in, String charset) throws IOException {
-        boolean isIphoneString = false;
-
-        // iso-2022-jp variants are supported by no versions as of Dec 2010.
-        if (charset.length() > 19 && charset.startsWith("x-") &&
-                charset.endsWith("-iso-2022-jp-2007") && !Charset.isSupported(charset)) {
-            in = new Iso2022JpToShiftJisInputStream(in);
-            charset = "x-" + charset.substring(2, charset.length() - 17) + "-shift_jis-2007";
-        }
-
-        // shift_jis variants are supported by Eclair and later.
-        if (JisSupport.isShiftJis(charset) && !Charset.isSupported(charset)) {
-            // If the JIS variant is iPhone, map the Unicode private use area in iPhone to the one in Android after
-            // converting the character set from the standard Shift JIS to Unicode.
-            if (charset.substring(2, charset.length() - 15).equals("iphone"))
-                isIphoneString = true;
-
-            charset = SHIFT_JIS;
-        }
 
         /*
          * See if there is conversion from the MIME charset to the Java one.
          * this function may also throw an exception if the charset name is not known
          */
-        boolean supported;
-        try {
-            supported = Charset.isSupported(charset);
-        } catch (IllegalCharsetNameException e) {
-            supported = false;
+        if (isSupported(charset)) {
+            return charset;
         }
 
-        for (String[] rule: CHARSET_FALLBACK_MAP) {
-            if (supported) {
-                break;
+        if (CHARSET_FALLBACK_MAP.containsKey(charset)) {
+            return CHARSET_FALLBACK_MAP.get(charset);
+        }
+
+        return DEFAULT_CHARSET_FOR_READING;
+    }
+
+    String readToString(InputStream in, String charset) throws IOException {
+        boolean isIphoneString = false;
+
+        charset = fixupCharset(charset);
+
+        // change charset for Emoji code
+        if (variant != null) {
+            if (charset.startsWith("iso-2022-jp")) {
+                in = new Iso2022JpToShiftJisInputStream(in);
+                charset = SHIFT_JIS;
             }
 
-            if (charset.matches(rule[0])) {
-                Log.e(LOG_TAG, "I don't know how to deal with the charset " + charset +
-                        ". Falling back to " + rule[1]);
-                charset = rule[1];
-                try {
-                    supported = Charset.isSupported(charset);
-                } catch (IllegalCharsetNameException e) {
-                    supported = false;
+            // iso-2022-jp variants are supported by no versions as of Dec 2010.
+            if (charset.equals(SHIFT_JIS) || charset.equals("cp932")) {
+                // If the JIS variant is iPhone, map the Unicode private use area in iPhone to the one in Android after
+                // converting the character set from the standard Shift JIS to Unicode.
+                if (variant.equals("iphone")) {
+                    isIphoneString = true;
+                } else {
+                    charset = "x-" + variant + "-shift_jis-2012";
+
+                    // shift_jis variants "x-*-shift_jis-2012" are supported by KitKat and later.
+                    if (!isSupported(charset)) {
+                        charset = "x-" + variant + "-shift_jis-2007";
+                        // shift_jis variants "x-*-shift_jis-2007" are supported by Eclair and later.
+                        if (!isSupported(charset)) {
+                            charset = SHIFT_JIS;
+                        }
+                    }
                 }
             }
         }
@@ -1118,4 +1182,36 @@ public class CharsetSupport {
         }
     }
 
+    static HashMap<String,String> defaultCharsetForK9Language;
+    static {
+        defaultCharsetForK9Language= new HashMap<String,String>();
+        defaultCharsetForK9Language.put("en", "us-ascii");
+        defaultCharsetForK9Language.put("ja", "iso-2022-jp");
+    }
+
+    static HashMap<Locale,String> defaultCharsetForLocale;
+    static {
+        defaultCharsetForLocale = new HashMap<Locale,String>();
+        defaultCharsetForLocale.put(Locale.ENGLISH, "us-ascii");
+        defaultCharsetForLocale.put(Locale.JAPAN,   "iso-2022-jp");
+    }
+
+    static String getDefaultCharset(String locale) {
+        String charset;
+
+        charset = defaultCharsetForK9Language.get(locale);
+        if (charset != null) {
+            return charset;
+        }
+
+        charset = defaultCharsetForLocale.get(Locale.getDefault());
+        if (charset != null) {
+            return charset;
+        }
+        return "us-ascii";
+    }
+
+    public static void setDefaultCharsetForReading(String locale) {
+        DEFAULT_CHARSET_FOR_READING = getDefaultCharset(locale);
+    }
 }

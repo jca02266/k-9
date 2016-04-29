@@ -478,7 +478,7 @@ public class SmtpTransport extends Transport {
             new HashMap<String, List<String>>();
         for (Address address : addresses) {
             String addressString = address.getAddress();
-            String charset = CharsetSupport.getCharsetFromAddress(addressString);
+            String charset = new CharsetSupport(null).getCharsetFromAddress(addressString);
             List<String> addressesOfCharset = charsetAddressesMap.get(charset);
             if (addressesOfCharset == null) {
                 addressesOfCharset = new ArrayList<String>();

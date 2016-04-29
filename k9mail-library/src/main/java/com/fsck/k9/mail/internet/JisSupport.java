@@ -8,7 +8,7 @@ import com.fsck.k9.mail.Part;
 public class JisSupport {
     public static final String SHIFT_JIS = "shift_jis";
 
-    public static String getJisVariantFromMessage(Message message) throws MessagingException {
+    public static String getJisVariantFromMessage(Message message) {
         if (message == null)
             return null;
 
@@ -28,8 +28,17 @@ public class JisSupport {
     }
 
     public static boolean isShiftJis(String charset) {
-        return charset.length() > 17 && charset.startsWith("x-")
-                && charset.endsWith("-shift_jis-2007");
+        if (charset.length() > "x--shift_jis-2012".length()
+                && charset.startsWith("x-")
+                && charset.endsWith("-shift_jis-2012")) {
+            return true;
+        }
+        if (charset.length() > "x--shift_jis-2007".length()
+                && charset.startsWith("x-")
+                && charset.endsWith("-shift_jis-2007")) {
+            return true;
+        }
+        return false;
     }
 
     public static String getJisVariantFromAddress(String address) {
@@ -48,8 +57,13 @@ public class JisSupport {
     }
 
 
-    private static String getJisVariantFromMailerHeaders(Message message) throws MessagingException {
-        String[] mailerHeaders = message.getHeader("X-Mailer");
+    private static String getJisVariantFromMailerHeaders(Message message) {
+        String[] mailerHeaders;
+        try {
+            mailerHeaders = message.getHeader("X-Mailer");
+        } catch (MessagingException e) {
+            return null;
+        }
         if (mailerHeaders.length == 0)
             return null;
 
@@ -60,8 +74,13 @@ public class JisSupport {
     }
 
 
-    private static String getJisVariantFromReceivedHeaders(Part message) throws MessagingException {
-        String[] receivedHeaders = message.getHeader("Received");
+    private static String getJisVariantFromReceivedHeaders(Part message) {
+        String[] receivedHeaders;
+        try {
+            receivedHeaders = message.getHeader("Received");
+        } catch (MessagingException e) {
+            return null;
+        }
         if (receivedHeaders.length == 0)
             return null;
 
@@ -81,7 +100,7 @@ public class JisSupport {
         return null;
     }
 
-    private static String getJisVariantFromFromHeaders(Message message) throws MessagingException {
+    private static String getJisVariantFromFromHeaders(Message message) {
         Address addresses[] = message.getFrom();
         if (addresses == null || addresses.length == 0)
             return null;
