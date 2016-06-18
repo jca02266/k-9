@@ -892,20 +892,20 @@ public class MimeUtility {
         return s.replaceAll("\r|\n", "");
     }
 
-    private static String decode(String s, Message message) {
+    private static String decode(String s, CharsetSupport charsetSupport) {
         if (s == null) {
             return null;
         } else {
-            return DecoderUtil.decodeEncodedWords(s, message);
+            return DecoderUtil.decodeEncodedWords(s, charsetSupport);
         }
     }
 
     public static String unfoldAndDecode(String s) {
-        return unfoldAndDecode(s, null);
+        return unfoldAndDecode(s, new CharsetSupport(null));
     }
 
-    public static String unfoldAndDecode(String s, Message message) {
-        return decode(unfold(s), message);
+    public static String unfoldAndDecode(String s, CharsetSupport charsetSupport) {
+        return decode(unfold(s), charsetSupport);
     }
 
     // TODO implement proper foldAndEncode

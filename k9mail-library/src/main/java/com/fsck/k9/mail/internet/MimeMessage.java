@@ -258,7 +258,7 @@ public class MimeMessage extends Message {
      */
     @Override
     public String getSubject() {
-        return MimeUtility.unfoldAndDecode(getFirstHeader("Subject"), this);
+        return MimeUtility.unfoldAndDecode(getFirstHeader("Subject"), new CharsetSupport(this));
     }
 
     @Override

@@ -57,6 +57,7 @@
         android:permissionGroup="android.permission-group.MESSAGES"
         android:protectionLevel="dangerous"/>
     <uses-permission android:name="${applicationId}.permission.DELETE_MESSAGES"/>
+    <uses-permission android:name="android.permission.READ_LOGS" />
 
 
     <application
@@ -287,6 +288,22 @@
         <activity
             android:name=".activity.UpgradeDatabases"
             android:label="@string/upgrade_databases_title"/>
+
+        <activity
+                android:name=".activity.K9LogcatShortcut"
+                android:label="K9 Logcat"
+                android:configChanges="locale"
+                >
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_SHORTCUT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".activity.LogcatActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
+        </activity>
 
         <receiver
             android:name=".service.BootReceiver"

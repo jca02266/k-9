@@ -10,6 +10,7 @@ import com.fsck.k9.mail.Message;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.Multipart;
 import com.fsck.k9.mail.Part;
+
 import org.apache.commons.io.input.BoundedInputStream;
 
 import java.io.IOException;
@@ -18,12 +19,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.fsck.k9.mail.K9MailLib.LOG_TAG;
-import static com.fsck.k9.mail.internet.CharsetSupport.fixupCharset;
-import static com.fsck.k9.mail.internet.MimeUtility.getHeaderParameter;
 import static com.fsck.k9.mail.internet.MimeUtility.isSameMimeType;
 import static com.fsck.k9.mail.internet.Viewable.Alternative;
 import static com.fsck.k9.mail.internet.Viewable.Html;
@@ -62,6 +59,7 @@ public class MessageExtractor {
         } catch (MessagingException e) {
             Log.e(LOG_TAG, "Unable to getTextFromPart", e);
         }
+
         return null;
     }
 
@@ -70,32 +68,7 @@ public class MessageExtractor {
         /*
          * We've got a text part, so let's see if it needs to be processed further.
          */
-        String charset = getHeaderParameter(part.getContentType(), "charset");
-        /*
-         * determine the charset from HTML message.
-         */
-        if (isSameMimeType(mimeType, "text/html") && charset == null) {
-            InputStream in = MimeUtility.decodeBody(body);
-            try {
-                byte[] buf = new byte[256];
-                in.read(buf, 0, buf.length);
-                String str = new String(buf, "US-ASCII");
-
-                if (str.isEmpty()) {
-                    return "";
-                }
-                Pattern p = Pattern.compile("<meta http-equiv=\"?Content-Type\"? content=\"text/html; charset=(.+?)\">", Pattern.CASE_INSENSITIVE);
-                Matcher m = p.matcher(str);
-                if (m.find()) {
-                    charset = m.group(1);
-                }
-            } finally {
-                try {
-                    MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);
-                } catch (IOException e) { /* ignore */ }
-            }
-        }
-        charset = fixupCharset(charset, getMessageFromPart(part));
+        String charset = CharsetSupport.getCharsetFromMessage(part);
         /*
          * Now we read the part into a buffer for further processing. Because
          * the stream is now wrapped we'll remove any transfer encoding at this point.
@@ -104,7 +77,7 @@ public class MessageExtractor {
         InputStream possiblyLimitedIn =
                 textSizeLimit != NO_TEXT_SIZE_LIMIT ? new BoundedInputStream(in, textSizeLimit) : in;
         try {
-            return CharsetSupport.readToString(possiblyLimitedIn, charset);
+            return new CharsetSupport(getMessageFromPart(part)).readToString(in, charset);
         } finally {
             try {
                 MimeUtility.closeInputStreamWithoutDeletingTemporaryFiles(in);
