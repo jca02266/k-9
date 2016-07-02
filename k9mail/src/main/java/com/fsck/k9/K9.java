@@ -537,6 +537,17 @@ public class K9 extends Application {
         setServicesEnabled(this);
         registerReceivers();
 
+        final Application that = this;
+
+        MessagingController.getInstance(this).addListener(new MessagingListener() {
+            @Override
+            public void systemStatusChanged() {
+                Account account = Preferences.getPreferences(that).getDefaultAccount();
+                MessagingController.getInstance(that).addLogcat(account, String.format("system status changed to %s",
+                        MailService.isSyncDisabled() ? "off" : "on"));
+            }
+        });
+
         MessagingController.getInstance(this).addListener(new MessagingListener() {
             private void broadcastIntent(String action, Account account, String folder, Message message) {
                 Uri uri = Uri.parse("email://messages/" + account.getAccountNumber() + "/" + Uri.encode(folder) + "/" + Uri.encode(message.getUid()));
