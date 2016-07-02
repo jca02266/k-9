@@ -56,13 +56,13 @@ class ImapFolderPusher extends ImapFolder {
         wakeLock.setReferenceCounted(false);
     }
 
-    public void start() {
+    public void start(ErrorListener errorListener) {
         synchronized (threadLock) {
             if (listeningThread != null) {
                 throw new IllegalStateException("start() called twice");
             }
 
-            listeningThread = new Thread(new PushRunnable());
+            listeningThread = new Thread(new PushRunnable(errorListener));
             listeningThread.start();
         }
     }
@@ -127,6 +127,11 @@ class ImapFolderPusher extends ImapFolder {
         private int delayTime = NORMAL_DELAY_TIME;
         private int idleFailureCount = 0;
         private boolean needsPoll = false;
+        ErrorListener errorListener;
+
+        PushRunnable(ErrorListener errorListener) {
+            this.errorListener = errorListener;
+        }
 
         @Override
         public void run() {
@@ -220,6 +225,9 @@ class ImapFolderPusher extends ImapFolder {
                                     " consecutive errors");
                             pushReceiver.pushError("Push disabled for " + getName() + " after " + idleFailureCount +
                                     " consecutive errors", e);
+
+                            errorListener.notifyError();
+
                             stop = true;
                         }
                     }

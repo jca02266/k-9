@@ -387,8 +387,8 @@ public class ImapStore extends RemoteStore {
     }
 
     @Override
-    public Pusher getPusher(PushReceiver receiver) {
-        return new ImapPusher(this, receiver);
+    public Pusher getPusher(PushReceiver receiver, ErrorListener errorListener) {
+        return new ImapPusher(this, receiver, errorListener);
     }
 
 

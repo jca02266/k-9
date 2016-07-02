@@ -82,6 +82,7 @@ import com.fsck.k9.mail.internet.MimeUtility;
 import com.fsck.k9.mail.internet.TextBody;
 import com.fsck.k9.mail.power.TracingPowerManager;
 import com.fsck.k9.mail.power.TracingPowerManager.TracingWakeLock;
+import com.fsck.k9.mail.store.imap.ErrorListener;
 import com.fsck.k9.mail.store.pop3.Pop3Store;
 import com.fsck.k9.mailstore.LocalFolder;
 import com.fsck.k9.mailstore.LocalFolder.MoreMessages;
@@ -4564,7 +4565,13 @@ public class MessagingController implements Runnable {
 
                         return false;
                     }
-                    Pusher pusher = store.getPusher(receiver);
+                    Pusher pusher = store.getPusher(receiver, new ErrorListener() {
+                        @Override
+                        public void notifyError() {
+                            notificationController.showSendFailedNotification(account,
+                                    new MessagingException("test"));
+                        }
+                    });
                     if (pusher != null) {
                         Pusher oldPusher  = pushers.putIfAbsent(account, pusher);
                         if (oldPusher == null) {

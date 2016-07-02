@@ -20,11 +20,13 @@ class ImapPusher implements Pusher {
     private final List<ImapFolderPusher> folderPushers = new ArrayList<>();
 
     private long lastRefresh = -1;
+    ErrorListener errorListener;
 
 
-    public ImapPusher(ImapStore store, PushReceiver pushReceiver) {
+    public ImapPusher(ImapStore store, PushReceiver pushReceiver, ErrorListener errorListener) {
         this.store = store;
         this.pushReceiver = pushReceiver;
+        this.errorListener = errorListener;
     }
 
     @Override
@@ -38,7 +40,7 @@ class ImapPusher implements Pusher {
                 ImapFolderPusher pusher = createImapFolderPusher(folderName);
                 folderPushers.add(pusher);
 
-                pusher.start();
+                pusher.start(errorListener);
             }
         }
     }

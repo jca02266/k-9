@@ -2,6 +2,8 @@
 package com.fsck.k9.mail;
 
 
+import com.fsck.k9.mail.store.imap.ErrorListener;
+
 import java.util.List;
 
 /**
@@ -45,7 +47,7 @@ public abstract class Store {
 
     public void sendMessages(List<? extends Message> messages) throws MessagingException { }
 
-    public Pusher getPusher(PushReceiver receiver) {
+    public Pusher getPusher(PushReceiver receiver, ErrorListener errorListener) {
         return null;
     }
 }
