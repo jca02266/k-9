@@ -185,7 +185,6 @@ class ImapConnection {
         InetAddress[] inetAddresses = InetAddress.getAllByName(settings.getHost());
         for (InetAddress address : inetAddresses) {
             try {
-//                throw new IOException("test");
                 return connectToAddress(address);
             } catch (IOException e) {
                 Log.w(LOG_TAG, "Could not connect to " + address, e);

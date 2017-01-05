@@ -29,10 +29,6 @@ import static com.fsck.k9.mail.store.imap.ImapResponseParser.equalsIgnoreCase;
 
 
 class ImapFolderPusher extends ImapFolder {
-//    private static final int IDLE_READ_TIMEOUT_INCREMENT = 1 * 60 * 1000;
-//    private static final int IDLE_FAILURE_COUNT_LIMIT = 2;
-//    private static final int MAX_DELAY_TIME = 1 * 60 * 1000; // 5 minutes
-//    private static final int NORMAL_DELAY_TIME = 5000;
     private static final int IDLE_READ_TIMEOUT_INCREMENT = 5 * 60 * 1000;
     private static final int IDLE_FAILURE_COUNT_LIMIT = 10;
     private static final int MAX_DELAY_TIME = 5 * 60 * 1000; // 5 minutes
