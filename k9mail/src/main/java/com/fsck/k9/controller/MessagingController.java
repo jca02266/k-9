@@ -2516,7 +2516,7 @@ public class MessagingController implements Runnable {
 
             localFolder.appendMessages(Collections.singletonList(message));
 
-            localFolder.clearMessagesOlderThan(nowTime - (15 * 60 * 1000));
+            // localFolder.clearMessagesOlderThan(nowTime - (15 * 60 * 1000));
 
             return true;
         } catch (Throwable it) {
